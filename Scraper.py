@@ -175,43 +175,6 @@ def getGoodTags(tagList):
             goodTags.append(tag)
     return goodTags
 
-
-def getCompNameTitleCopyright(soup):
-    # XXX: THIS FUNCTION NOT USED AS OF 3-30-2020
-    title = soup.findAll('title')
-    if len(title) > 0:
-        titleString = getStringNoSpaces(title[0].text)
-    else:
-        return "None"
-    tags = getGoodTags(soup.findAll(True))
-    eligibleCopyright = []
-    for tag in tags:
-        if re.search("copyright|all rights reserved|\xA9",tag.text,re.I):
-            if re.search("\{|\}",tag.text,re.I):
-                continue
-            else:
-                eligibleCopyright.append(tag.text)
-        else:
-            continue
-    copyrightString = makeUnique(eligibleCopyright)
-    if len(copyrightString) == 1:
-        finalCopyrightString = getStringNoSpaces(copyrightString[0])
-        return getOverLap(titleString,finalCopyrightString)
-    elif len(copyrightString) > 1:
-        record = 0
-        recstr = ""
-        for str in copyrightString:
-            finstr = getStringNoSpaces(str)
-            olap = getOverLap(titleString,finalCopyrightString)
-            length = len(olap)
-            if length > record:
-                recstr = olap
-        return recstr
-    else:
-        return titleString
-
-
-
 def getOverLap(str1,str2):
     # TODO: miiiight be able to make this faster with recursion?
     record = []
@@ -245,11 +208,54 @@ def getStringNoSpaces(str):
             cleanWords.append(word)
     return ' '.join(cleanWords)
 
-def scrapeCompanyName(titleSoup,referenceSoup):
+def scrapeCompanyNameByTitle(titleSoup,referenceSoup):
     title = titleSoup.findAll('title')
     if len(title) > 0:
         titleString = getStringNoSpaces(title[0].text)
     else:
-        return "None"
+        return None
     refString = getPageString(referenceSoup.findAll(True))
     return getOverLap(titleString,refString)
+
+def scrapeCompNameByCopyrightOrTitle(site,soup):
+    tags = getGoodTags(soup.findAll(True))
+    eligibleCopyright = []
+    for tag in tags:
+        if re.search("copyright|all rights reserved|\xA9",tag.text,re.I):
+            if re.search("\{|\}",tag.text,re.I):
+                continue
+            else:
+                eligibleCopyright.append(tag.text)
+        else:
+            continue
+    if eligibleCopyright != []:
+        strings = makeUnique(eligibleCopyright)
+        if strings != []:
+            copyrightString = strings[0]
+        else:
+            return None
+    else:
+        # TODO: REFACTOR -- SHOULD HAVE CONTACT PAGE BY TIME THIS IS CALLED
+        # if no cont page found could just run copyright/(title/homepage comparison)
+        contSite = getContactPage(site,soup)
+        if contSite != None:
+            try:
+                contSoup = BeautifulSoup(requests.get(contSite,timeout=3.0).content,"lxml")
+            except:
+                return None
+            return scrapeCompanyNameByTitle(soup,contSoup)
+        else:
+            return scrapeCompanyNameByTitle(soup,soup)
+    match = re.search('(\d+)[^a-z]+',copyrightString,re.I)
+    if match is not None:
+        newString = copyrightString[match.span()[1]:]
+        goodSpan = re.search('[^.,;\|]+',newString,re.I).span()
+        return newString[goodSpan[0]:goodSpan[1]]
+    else:
+        noYearMatch = re.search('(\xA9|copyright)[^a-z]+',copyrightString,re.I)
+        if noYearMatch is not None:
+            newString = copyrightString[noYearMatch.span()[1]:]
+            goodSpan = re.search('[^.,;\|]+',newString,re.I).span()
+            return newString[goodSpan[0]:goodSpan[1]]
+        else:
+            return None

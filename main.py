@@ -95,13 +95,14 @@ def main(window,statusLabel,searchEntry):
                 print("Emails: ", emails)
                 print("Contact Page Could Not Be Accessed")
                 continue
-            compName = Scraper.scrapeCompanyName(homepageSoup,contSoup)
-            if compName is not None:
-                worksheet.write(index, compNameCol, compName)
-                print("Company: " + compName)
-            else:
-                worksheet.write(index, compNameCol, "None")
-                print("Company name could not be found")
+            # TODO: IMPLIMENT NEW COMPNAME SYSTEM THAT USES scrapeCompNameByCopyrightOrTitle
+            # compName = Scraper.scrapeCompanyName(homepageSoup,contSoup)
+            # if compName is not None:
+            #     worksheet.write(index, compNameCol, compName)
+            #     print("Company: " + compName)
+            # else:
+            #     worksheet.write(index, compNameCol, "None")
+            #     print("Company name could not be found")
             emails = Scraper.makeUnique(emails + Scraper.scrapeEmail(contSoup))
             if emails != []:
                 # TODO: new email each horiz cell
