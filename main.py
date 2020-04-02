@@ -5,11 +5,14 @@ from lxml import html
 import requests
 import re
 import xlsxwriter
+import pickle
 
 
 
 def main(window,statusLabel,searchEntry):
-
+    settingFile = open("settings.dat","rb")
+    settingsDict = pickle.load(settingFile)
+    settingFile.close()
     query = searchEntry.get()
     if query == '':
         statusLabel["text"] = "Please enter query"
@@ -17,7 +20,7 @@ def main(window,statusLabel,searchEntry):
 
     workbookName = '_'.join(query.split())
 
-    workbook = xlsxwriter.Workbook('C:/Users/98mcv/Desktop/Email_Collection/' + workbookName + '.xlsx')
+    workbook = xlsxwriter.Workbook(settingsDict['saveDirectory'] + workbookName + '.xlsx')
 
     worksheet = workbook.add_worksheet()
 
@@ -25,8 +28,9 @@ def main(window,statusLabel,searchEntry):
     compNameCol = 2
     emailCol = 4
     locCol = 6
-    noScrapeCol = 10
-    errorCol = 15
+    townCol = 8
+    noScrapeCol = 12
+    errorCol = 17
     worksheet.write(0,0, "Google Search: ")
     worksheet.write(0,2, query)
     worksheet.write(1,siteCol, "Website")
@@ -40,7 +44,7 @@ def main(window,statusLabel,searchEntry):
     goodSites = []
     statusLabel["text"] = "Collecting sites..."
     window.update_idletasks()
-    for site in search(query, tld='com', lang='en', num=10, start=0, stop=50, pause=2.0):
+    for site in search(query, tld='com', lang='en', num=10, start=0, stop=settingsDict['numGoogResults'], pause=2.0):
         cleanValidSite = Scraper.validateSite(site)
         if cleanValidSite is not None:
             print(site)
@@ -82,27 +86,31 @@ def main(window,statusLabel,searchEntry):
             try:
                 contSoup = BeautifulSoup(requests.get(contPage,timeout=3.0).content,"lxml")
             except:
-                # TODO: need to write in something for comp name here too
-                #maybe if contact page not accessible thats another col? idk
                 if emails != []:
                     # TODO: Change so emails are placed in cells next to each other horiz
                     worksheet.write(index, emailCol, ','.join(emails))
                 else:
                     worksheet.write(index, emailCol, "None")
                 worksheet.write(index, locCol, "None")
-                worksheet.write(index,compNameCol,"None") #<--may not be best solution?
+                compName = Scraper.scrapeCompNameByCopyrightOrTitle(site,homepageSoup)
+                if compName is not None:
+                    worksheet.write(index, compNameCol, compName)
+                    print("Company: " + compName)
+                else:
+                    worksheet.write(index, compNameCol, "None")
+                    print("Company name could not be found")
                 index = index + 1
                 print("Emails: ", emails)
                 print("Contact Page Could Not Be Accessed")
                 continue
             # TODO: IMPLIMENT NEW COMPNAME SYSTEM THAT USES scrapeCompNameByCopyrightOrTitle
-            # compName = Scraper.scrapeCompanyName(homepageSoup,contSoup)
-            # if compName is not None:
-            #     worksheet.write(index, compNameCol, compName)
-            #     print("Company: " + compName)
-            # else:
-            #     worksheet.write(index, compNameCol, "None")
-            #     print("Company name could not be found")
+            compName = Scraper.scrapeCompNameByCopyrightOrTitle(site,homepageSoup,contSoup)
+            if compName is not None:
+                worksheet.write(index, compNameCol, compName)
+                print("Company: " + compName)
+            else:
+                worksheet.write(index, compNameCol, "None")
+                print("Company name could not be found")
             emails = Scraper.makeUnique(emails + Scraper.scrapeEmail(contSoup))
             if emails != []:
                 # TODO: new email each horiz cell
@@ -110,23 +118,29 @@ def main(window,statusLabel,searchEntry):
             else:
                 worksheet.write(index, emailCol, "None")
             print("Emails: ", emails)
-            add = Scraper.scrapeAddress(contSoup)
-            if add != []:
-                worksheet.write(index,locCol,','.join(add))
-                print("Address: ",add)
+            bestAddress = Scraper.scrapeAddress(contSoup)
+            if bestAddress != []:
+                worksheet.write(index,locCol,','.join(bestAddress))
+                print("Address: ",bestAddress)
             else:
-                poBox = Scraper.scrapePOBox(contSoup)
-                if poBox != []:
-                    worksheet.write(index,locCol,','.join(poBox))
-                    print("P.O. Box: ",poBox)
+                bestAddress = Scraper.scrapePOBox(contSoup)
+                if bestAddress != []:
+                    worksheet.write(index,locCol,','.join(bestAddress))
+                    print("P.O. Box: ",bestAddress)
                 else:
-                    town = Scraper.scrapeTown(contSoup)
-                    if town != []:
-                        worksheet.write(index,locCol,','.join(town))
-                        print("Town: ",town)
+                    bestAddress = Scraper.scrapeTown(contSoup)
+                    if bestAddress != []:
+                        worksheet.write(index,locCol,','.join(bestAddress))
+                        print("Town: ",bestAddress)
                     else:
                         worksheet.write(index,locCol,"None")
                         print("No Address, P.O. Box or Town could be found.")
+            if bestAddress != []:
+                town = Scraper.getTownFromLoc(bestAddress)
+                worksheet.write(index,townCol,','.join(town))
+            else:
+                worksheet.write(index,townCol,"None")
+                print("None")
             index = index + 1
         else:
             if emails != []:
@@ -135,7 +149,7 @@ def main(window,statusLabel,searchEntry):
             else:
                 worksheet.write(index, emailCol, "None")
             worksheet.write(index, locCol, "None")
-            compName = Scraper.scrapeCompanyName(homepageSoup,homepageSoup)
+            compName = Scraper.scrapeCompNameByCopyrightOrTitle(site,homepageSoup)
             if compName is not None:
                 worksheet.write(index, compNameCol, compName)
                 print("Company: " + compName)

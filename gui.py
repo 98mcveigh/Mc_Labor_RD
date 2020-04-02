@@ -2,6 +2,7 @@
 from tkinter import *
 import main
 import threading
+import settings
 
 #Create initial window with desired size, color, title and icon
 window = Tk()
@@ -22,11 +23,13 @@ def on_leave(e):
 #call main scraping function when search button is clicked
 def runScraping():
     #create new thread so gui can be responsive during search
-    thread1 = threading.Thread(target=main.main,args=[window,statusLabel,searchEntry])
-    thread1.start()
+    # thread1 = threading.Thread(target=main.main,args=[window,statusLabel,searchEntry])
+    # thread1.start()
+    # statusLabel["text"] = "Please enter query"
+    window.update_idletasks()
 
-def newWindow():
-    print("TO BE DONE")
+def changeSettings():
+    settings.changeSettings()
     # TODO: Look into making search settings window if necessary (# sites searched etc.)
 
 #Create and place McLabor logo on 1/5 of the way down in the middle
@@ -58,9 +61,13 @@ searchButton.bind("<Enter>", on_enter)
 searchButton.bind("<Leave>", on_leave)
 
 #create and place more options button to pull up new window for settings
-moreOptionsButton = Button(window,bg="#f4f4f4",activebackground = "#bbbbbb",relief = "flat",text="More Options...",font=("Times New Roman",8),command=newWindow)
+moreOptionsButton = Button(window,bg="#f4f4f4",activebackground = "#bbbbbb",relief = "flat",text="More Options...",font=("Times New Roman",8),command=changeSettings)
 moreOptionsButton.bind("<Enter>", on_enter)
 moreOptionsButton.bind("<Leave>", on_leave)
 moreOptionsButton.pack(side="bottom")
 
+try:
+    open("settings.dat")
+except FileNotFoundError:
+    settings.getInitialSettings()
 window.mainloop()

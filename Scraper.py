@@ -217,8 +217,8 @@ def scrapeCompanyNameByTitle(titleSoup,referenceSoup):
     refString = getPageString(referenceSoup.findAll(True))
     return getOverLap(titleString,refString)
 
-def scrapeCompNameByCopyrightOrTitle(site,soup):
-    tags = getGoodTags(soup.findAll(True))
+def scrapeCompNameByCopyrightOrTitle(site,homepageSoup,contSoup=None):
+    tags = getGoodTags(homepageSoup.findAll(True))
     eligibleCopyright = []
     for tag in tags:
         if re.search("copyright|all rights reserved|\xA9",tag.text,re.I):
@@ -231,31 +231,67 @@ def scrapeCompNameByCopyrightOrTitle(site,soup):
     if eligibleCopyright != []:
         strings = makeUnique(eligibleCopyright)
         if strings != []:
-            copyrightString = strings[0]
+            copyrightString = max(strings,key=len)
+            match = re.search('(\d+)[^a-z]+',copyrightString,re.I)
+            if match is not None:
+                newString = copyrightString[match.span()[1]:]
+                goodSpan = re.search('[^.,;\|]+',newString,re.I).span()
+                return newString[goodSpan[0]:goodSpan[1]]
+            else:
+                noYearMatch = re.search('(\xA9|copyright)[^a-z]+',copyrightString,re.I)
+                if noYearMatch is not None:
+                    newString = copyrightString[noYearMatch.span()[1]:]
+                    goodSpan = re.search('[^.,;\|]+',newString,re.I).span()
+                    return newString[goodSpan[0]:goodSpan[1]]
+        if contSoup is not None:
+            # print("couldnt go by copyright doing title/contact...")
+            compName = scrapeCompanyNameByTitle(homepageSoup,contSoup)
+            if compName is not None:
+                return compName
+            else:
+                # print("couldnt go by title/contact doing title/homepage...")
+                compName = scrapeCompanyNameByTitle(homepageSoup,homepageSoup)
+                if compName is not None:
+                    return compName
+                else:
+                    return None
         else:
-            return None
-    else:
-        # TODO: REFACTOR -- SHOULD HAVE CONTACT PAGE BY TIME THIS IS CALLED
-        # if no cont page found could just run copyright/(title/homepage comparison)
-        contSite = getContactPage(site,soup)
-        if contSite != None:
-            try:
-                contSoup = BeautifulSoup(requests.get(contSite,timeout=3.0).content,"lxml")
-            except:
+            # print("couldnt go by title/contact doing title/homepage...")
+            compName = scrapeCompanyNameByTitle(homepageSoup,homepageSoup)
+            if compName is not None:
+                return compName
+            else:
                 return None
-            return scrapeCompanyNameByTitle(soup,contSoup)
-        else:
-            return scrapeCompanyNameByTitle(soup,soup)
-    match = re.search('(\d+)[^a-z]+',copyrightString,re.I)
-    if match is not None:
-        newString = copyrightString[match.span()[1]:]
-        goodSpan = re.search('[^.,;\|]+',newString,re.I).span()
-        return newString[goodSpan[0]:goodSpan[1]]
     else:
-        noYearMatch = re.search('(\xA9|copyright)[^a-z]+',copyrightString,re.I)
-        if noYearMatch is not None:
-            newString = copyrightString[noYearMatch.span()[1]:]
-            goodSpan = re.search('[^.,;\|]+',newString,re.I).span()
-            return newString[goodSpan[0]:goodSpan[1]]
+        # print("no eligible copyright")
+        if contSoup is not None:
+            # print("couldnt go by copyright doing title/contact...")
+            compName = scrapeCompanyNameByTitle(homepageSoup,contSoup)
+            if compName is not None:
+                return compName
+            else:
+                # print("couldnt go by title/contact doing title/homepage...")
+                compName = scrapeCompanyNameByTitle(homepageSoup,homepageSoup)
+                if compName is not None:
+                    return compName
+                else:
+                    return None
         else:
-            return None
+            # print("couldnt go by title/contact doing title/homepage...")
+            compName = scrapeCompanyNameByTitle(homepageSoup,homepageSoup)
+            if compName is not None:
+                return compName
+            else:
+                return None
+
+def getTownFromLoc(locArray):
+    locTowns = []
+    for loc in locArray:
+        record = ""
+        for town in zips.towns():
+            if town.lower() in loc.lower() and len(town) > len(record):
+                record = town
+            else:
+                continue
+        locTowns.append(record)
+    return locTowns
