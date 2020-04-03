@@ -309,5 +309,4 @@ def printEmails(emails,index,infoCol,emailCol,workbook):
             workbook.write(index,col,email)
             nonInfoNum = nonInfoNum + 1
 
-
     return 0
