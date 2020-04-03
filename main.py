@@ -73,11 +73,7 @@ def main(window,statusLabel,searchEntry):
     for site in search(query, tld='com', lang='en', num=10, start=0, stop=settingsDict['numGoogResults'], pause=2.0):
         cleanValidSite = Scraper.validateSite(site)
         if cleanValidSite is not None:
-            print(site)
             goodSites.append(cleanValidSite)
-
-    print()
-    print()
     #eliminate any site repeats
     goodSites = Scraper.makeUnique(goodSites)
     badSites = []
@@ -87,10 +83,7 @@ def main(window,statusLabel,searchEntry):
         statusLabel["text"] = "Collecting information..." + " " + siteProgress
         window.update_idletasks()
         statusIndex = statusIndex + 1
-        print()
-        print()
         emails = []
-        print("Finding Information for: " + site)
 
         # Collect homepage content and test for scraping permission.
         # If not available denote on excel sheet the reason
@@ -98,11 +91,9 @@ def main(window,statusLabel,searchEntry):
             homepageSoup = BeautifulSoup(requests.get(site,timeout=3.0).content,"lxml")
         except:
             badSites.append(site)
-            print(site + " is not accessible")
             continue
         if not Scraper.isAllowedToScrape(site,homepageSoup):
             badSites.append(site)
-            print(site + " does not allow scraping")
             continue
 
         #if site can be scraped write site to appropriate
@@ -123,34 +114,25 @@ def main(window,statusLabel,searchEntry):
                 compName = Scraper.scrapeCompName(homepageSoup)
                 if compName is not None:
                     worksheet.write(index, compNameCol, compName)
-                    print("Company: " + compName)
                 else:
                     worksheet.write(index, compNameCol, "")
-                    print("Company name could not be found")
 
                 phoneNums = Scraper.scrapePhoneNumber(contSoup)
                 if phoneNums:
-                    print("Phone Nums: ",phoneNums)
                     worksheet.write(index,phoneCol,','.join(phoneNums))
 
                 index = index + 1
-                print("Emails: ", emails)
-                print("Contact Page Could Not Be Accessed")
                 continue
 
             #collect and report company name
             compName = Scraper.scrapeCompName(homepageSoup,contSoup)
             if compName is not None:
                 worksheet.write(index, compNameCol, compName)
-                print("Company: " + compName)
-            else:
-                print("Company name could not be found")
 
             # add new emails found on contact page, make all unique and report
             emails = Scraper.makeUnique(emails + Scraper.scrapeEmail(contSoup))
             if emails != []:
                 Scraper.reportEmails(emails,index,infoCol,emailCol,worksheet)
-            print("Emails: ", emails)
 
             #find and report all phone numbers found on contact page
             phoneNums = Scraper.scrapePhoneNumber(contSoup)
@@ -190,17 +172,11 @@ def main(window,statusLabel,searchEntry):
 
             phoneNums = Scraper.scrapePhoneNumber(contSoup)
             if phoneNums:
-                print("Phone Nums: ",phoneNums)
                 worksheet.write(index,phoneCol,','.join(phoneNums))
 
             compName = Scraper.scrapeCompName(homepageSoup)
             if compName is not None:
                 worksheet.write(index, compNameCol, compName)
-                print("Company: " + compName)
-            else:
-                print("Company name could not be found")
-            print("Emails: ", emails)
-            print("Contact Page was not Accessible")
             index = index + 1
     index = index + 1
     worksheet.write(index,siteCol,"Inaccessible Sites:")

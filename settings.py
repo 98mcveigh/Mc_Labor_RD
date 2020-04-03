@@ -14,7 +14,6 @@ def getInitialSettings():
 
     def saveSettings():
         settingDict['numGoogResults'] = slider.get()
-        print("Saving Settings...   ",settingDict)
         settingFile = open("settings.dat","wb")
         pickle.dump(settingDict,settingFile)
         settingFile.close()
