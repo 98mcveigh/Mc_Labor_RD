@@ -7,58 +7,72 @@ import re
 import xlsxwriter
 import pickle
 
-
-
 def main(window,statusLabel,searchEntry):
-    settingFile = open("settings.dat","rb")
-    settingsDict = pickle.load(settingFile)
-    settingFile.close()
+    # Collect settings and entered query
+    settingsFile = open("settings.dat","rb")
+    settingsDict = pickle.load(settingsFile)
+    settingsFile.close()
     query = searchEntry.get()
     if query == '':
         statusLabel["text"] = "Please enter query"
         return
 
+    #setup excel sheet to print results to
     workbookName = '_'.join(query.split())
 
     workbook = xlsxwriter.Workbook(settingsDict['saveDirectory'] + workbookName + '.xlsx')
 
     worksheet = workbook.add_worksheet()
 
-    siteCol = 0
-    compNameCol = 2
-    emailCol = 4
-    locCol = 6
-    townCol = 8
-    noScrapeCol = 12
-    errorCol = 17
+    compNameCol = 0
+    locCol = 1
+    townCol = 2
+    stateCol = 3
+    zipCol = 4
+    phoneCol = 5
+    infoCol = 6
+    siteCol = 7
+    emailCol = 8
+
+    noScrapeCol = 12 #???????????
+    errorCol = 17    #???????????
+
+    index = 2
+    errorIndex = 2
+    noScrapeIndex = 2
+    statusIndex = 1
     worksheet.write(0,0, "Google Search: ")
     worksheet.write(0,2, query)
-    worksheet.write(1,siteCol, "Website")
     worksheet.write(1,compNameCol, "Company Name")
-    worksheet.write(1,emailCol, "Email(s)")
-    worksheet.write(1,locCol, "Location")
+    worksheet.write(1,locCol, "Mailing Address")
+    worksheet.write(1,townCol, "Mailing City")
+    worksheet.write(1,stateCol, "Mailing State")
+    worksheet.write(1,zipCol, "Mailing Zip Code")
+    worksheet.write(1,phoneCol, "Phone Number Combined")
+    worksheet.write(1,infoCol, "Email Address (Info)")
+    worksheet.write(1,siteCol, "Website Address")
+    worksheet.write(1,emailCol, "Contact Emails")
 
-    worksheet.write(1,noScrapeCol, "Sites Where Not Allowed")
-    worksheet.write(1,errorCol, "Sites Encountered Unknown Error")
+    # worksheet.write(1,noScrapeCol, "Sites Where Not Allowed")
+    # worksheet.write(1,errorCol, "Sites Encountered Unknown Error")
 
     goodSites = []
     statusLabel["text"] = "Collecting sites..."
     window.update_idletasks()
+
+    #search google for sites and collect only those that are homepages and
+    # about pages (avoiding things like angies list)
     for site in search(query, tld='com', lang='en', num=10, start=0, stop=settingsDict['numGoogResults'], pause=2.0):
         cleanValidSite = Scraper.validateSite(site)
         if cleanValidSite is not None:
             print(site)
             goodSites.append(cleanValidSite)
-        else:
-            continue
     print()
     print()
-    index = 2
-    errorIndex = 2
-    noScrapeIndex = 2
-    statusIndex = 1
+    #eliminate any site repeats
     goodSites = Scraper.makeUnique(goodSites)
     for site in goodSites:
+        #update gui
         siteProgress = str(statusIndex) + "/" + str(len(goodSites))
         statusLabel["text"] = "Collecting information..." + " " + siteProgress
         window.update_idletasks()
@@ -67,6 +81,9 @@ def main(window,statusLabel,searchEntry):
         print()
         emails = []
         print("Finding Information for: " + site)
+
+        # Collect homepage content and test for scraping permission.
+        # If not available denote on excel sheet the reason
         try:
             homepageSoup = BeautifulSoup(requests.get(site,timeout=3.0).content,"lxml")
         except:
@@ -79,20 +96,26 @@ def main(window,statusLabel,searchEntry):
             noScrapeIndex = noScrapeIndex + 1
             print(site + " does not allow scraping")
             continue
+
+        #if site can be scraped write site to appropriate
+        # excel cell and collect emails from homepage
         worksheet.write(index,siteCol, site)
         emails = Scraper.makeUnique(emails + Scraper.scrapeEmail(homepageSoup))
+        #get contact page and if it is there collect the content.
         contPage = Scraper.getContactPage(site,homepageSoup)
         if contPage != None:
             try:
                 contSoup = BeautifulSoup(requests.get(contPage,timeout=3.0).content,"lxml")
             except:
+                # if contact page can not be scraped report out emails and collect
+                # and report out company name and continue to next site
                 if emails != []:
-                    # TODO: Change so emails are placed in cells next to each other horiz
-                    worksheet.write(index, emailCol, ','.join(emails))
+                    Scraper.reportEmails(emails,infoCol,emailCol,workbook)
                 else:
                     worksheet.write(index, emailCol, "None")
+                    worksheet.write(index, infoCol, "None")
                 worksheet.write(index, locCol, "None")
-                compName = Scraper.scrapeCompNameByCopyrightOrTitle(site,homepageSoup)
+                compName = Scraper.scrapeCompName(homepageSoup)
                 if compName is not None:
                     worksheet.write(index, compNameCol, compName)
                     print("Company: " + compName)
@@ -103,14 +126,17 @@ def main(window,statusLabel,searchEntry):
                 print("Emails: ", emails)
                 print("Contact Page Could Not Be Accessed")
                 continue
-            # TODO: IMPLIMENT NEW COMPNAME SYSTEM THAT USES scrapeCompNameByCopyrightOrTitle
-            compName = Scraper.scrapeCompNameByCopyrightOrTitle(site,homepageSoup,contSoup)
+
+            #collect and report company name
+            compName = Scraper.scrapeCompName(homepageSoup,contSoup)
             if compName is not None:
                 worksheet.write(index, compNameCol, compName)
                 print("Company: " + compName)
             else:
                 worksheet.write(index, compNameCol, "None")
                 print("Company name could not be found")
+
+            # add new emails found on contact page, make all unique and report
             emails = Scraper.makeUnique(emails + Scraper.scrapeEmail(contSoup))
             if emails != []:
                 # TODO: new email each horiz cell
@@ -118,6 +144,8 @@ def main(window,statusLabel,searchEntry):
             else:
                 worksheet.write(index, emailCol, "None")
             print("Emails: ", emails)
+
+            #find best address prioritizing full address -> PO Box -> just town
             bestAddress = Scraper.scrapeAddress(contSoup)
             if bestAddress != []:
                 worksheet.write(index,locCol,','.join(bestAddress))
@@ -135,21 +163,27 @@ def main(window,statusLabel,searchEntry):
                     else:
                         worksheet.write(index,locCol,"None")
                         print("No Address, P.O. Box or Town could be found.")
+            # report out whatever the best address is and continue to next site
             if bestAddress != []:
                 town = Scraper.getTownFromLoc(bestAddress)
                 worksheet.write(index,townCol,','.join(town))
+                zip = Scraper.getZipFromLoc(bestAddress)
+                worksheet.write(#####################FILL THIS IN##########################)
             else:
                 worksheet.write(index,townCol,"None")
                 print("None")
             index = index + 1
+
         else:
+            # if there is no contact page report out emails and company name
+            # and continue to next site
             if emails != []:
                 # TODO: make each email new cell horiz
                 worksheet.write(index, emailCol, ','.join(emails))
             else:
                 worksheet.write(index, emailCol, "None")
             worksheet.write(index, locCol, "None")
-            compName = Scraper.scrapeCompNameByCopyrightOrTitle(site,homepageSoup)
+            compName = Scraper.scrapeCompName(homepageSoup)
             if compName is not None:
                 worksheet.write(index, compNameCol, compName)
                 print("Company: " + compName)

@@ -61,7 +61,7 @@ searchButton.bind("<Enter>", on_enter)
 searchButton.bind("<Leave>", on_leave)
 
 #create and place more options button to pull up new window for settings
-moreOptionsButton = Button(window,bg="#f4f4f4",activebackground = "#bbbbbb",relief = "flat",text="More Options...",font=("Times New Roman",8),command=changeSettings)
+moreOptionsButton = Button(window,bg="#f4f4f4",activebackground = "#bbbbbb",relief = "flat",text="Settings",font=("Times New Roman",8),command=changeSettings)
 moreOptionsButton.bind("<Enter>", on_enter)
 moreOptionsButton.bind("<Leave>", on_leave)
 moreOptionsButton.pack(side="bottom")

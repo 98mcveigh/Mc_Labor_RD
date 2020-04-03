@@ -10,6 +10,7 @@ def getInitialSettings():
     settingDict = {'saveDirectory':None,'numGoogResults':None}
     def getDir():
         settingDict['saveDirectory'] = filedialog.askdirectory()
+        init.focus_force()
 
     def saveSettings():
         settingDict['numGoogResults'] = slider.get()
@@ -59,6 +60,7 @@ def changeSettings():
     saveFile.close()
     def getDir():
         settingDict['saveDirectory'] = filedialog.askdirectory()
+        init.focus_force()
 
     def saveSettings():
         settingDict['numGoogResults'] = slider.get()
