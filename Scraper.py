@@ -51,7 +51,7 @@ def isAllowedToScrape(site,soup):
 
 def getStringNoSpaces(str):
     #divide all words by the list below --> should leave only alphanumeric chars
-    deliminate = re.split('[\:,\;,\-,\|,\/,\s*]\s*',str)
+    deliminate = re.split('[\(,\),\:,\;,\-,\|,\/,\s*]\s*',str)
     cleanWords = []
     #get rid of any blank spaces
     for word in deliminate:
@@ -310,3 +310,12 @@ def scrapeBestAddress(soup,shouldScrapeTown = False):
             print("Town: ",bestAddress)
             return bestAddress
     return None
+
+def scrapePhoneNumber(soup):
+    pageString = getPageString(soup.findAll(True))
+    phoneNumMatch = re.findall('(\d{3} \d{3} \d{4})',pageString)
+    goodNums = list(dict.fromkeys(phoneNumMatch))
+    finalNums = []
+    for num in goodNums:
+        finalNums.append("(" + num[0:3] + ")" + num[3:7] + "-" + num[8:12])
+    return finalNums

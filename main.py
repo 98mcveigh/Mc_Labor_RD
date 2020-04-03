@@ -119,17 +119,20 @@ def main(window,statusLabel,searchEntry):
                 # and report out company name and continue to next site
                 if emails != []:
                     Scraper.reportEmails(emails,infoCol,emailCol,workbook)
-                else:
-                    worksheet.write(index, emailCol, "None")
-                    worksheet.write(index, infoCol, "None")
-                worksheet.write(index, locCol, "None")
+
                 compName = Scraper.scrapeCompName(homepageSoup)
                 if compName is not None:
                     worksheet.write(index, compNameCol, compName)
                     print("Company: " + compName)
                 else:
-                    worksheet.write(index, compNameCol, "None")
+                    worksheet.write(index, compNameCol, "")
                     print("Company name could not be found")
+
+                phoneNums = Scraper.scrapePhoneNumber(contSoup)
+                if phoneNums:
+                    print("Phone Nums: ",phoneNums)
+                    worksheet.write(index,phoneCol,','.join(phoneNums))
+
                 index = index + 1
                 print("Emails: ", emails)
                 print("Contact Page Could Not Be Accessed")
@@ -141,17 +144,18 @@ def main(window,statusLabel,searchEntry):
                 worksheet.write(index, compNameCol, compName)
                 print("Company: " + compName)
             else:
-                worksheet.write(index, compNameCol, "None")
                 print("Company name could not be found")
 
             # add new emails found on contact page, make all unique and report
             emails = Scraper.makeUnique(emails + Scraper.scrapeEmail(contSoup))
             if emails != []:
                 Scraper.reportEmails(emails,index,infoCol,emailCol,worksheet)
-            else:
-                worksheet.write(index, infoCol, "None")
             print("Emails: ", emails)
 
+            #find and report all phone numbers found on contact page
+            phoneNums = Scraper.scrapePhoneNumber(contSoup)
+            if phoneNums:
+                worksheet.write(index,phoneCol,','.join(phoneNums))
             #find best address prioritizing full address -> PO Box -> just town
             bestAddress = Scraper.scrapeBestAddress(contSoup,True)
             if bestAddress is not None:
@@ -162,8 +166,7 @@ def main(window,statusLabel,searchEntry):
                 worksheet.write(index,zipCol,zip)
                 worksheet.write(index,stateCol,"MA") #scraper only functional for MA 4-3-2020
             else:
-                worksheet.write(index,townCol,"None")
-                print("None")
+                worksheet.write(index,townCol,"")
             index = index + 1
 
         else:
@@ -171,8 +174,6 @@ def main(window,statusLabel,searchEntry):
             # and continue to next site
             if emails != []:
                 Scraper.reportEmails(emails,index,infoCol,emailCol,worksheet)
-            else:
-                worksheet.write(index, infoCol, "None")
 
             #Only look for specific addresses or po boxes on front page in case
             # of site listing available towns for work
@@ -185,15 +186,18 @@ def main(window,statusLabel,searchEntry):
                 worksheet.write(index,zipCol,zip)
                 worksheet.write(index,stateCol,"MA") #scraper only functional for MA 4-3-2020
             else:
-                worksheet.write(index,townCol,"None")
-                print("None")
+                worksheet.write(index,townCol,"")
+
+            phoneNums = Scraper.scrapePhoneNumber(contSoup)
+            if phoneNums:
+                print("Phone Nums: ",phoneNums)
+                worksheet.write(index,phoneCol,','.join(phoneNums))
 
             compName = Scraper.scrapeCompName(homepageSoup)
             if compName is not None:
                 worksheet.write(index, compNameCol, compName)
                 print("Company: " + compName)
             else:
-                worksheet.write(index, compNameCol, "None")
                 print("Company name could not be found")
             print("Emails: ", emails)
             print("Contact Page was not Accessible")
