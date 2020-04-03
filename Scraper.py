@@ -110,12 +110,12 @@ def getPageString(tagList):
 def scrapeEmail(soup):
     # collect email by looking through entire page for letters@letters(.com/.org/.net)
     pageString = getPageString(soup.findAll(True))
-    searchMatch = re.findall('[\w\.]+@[\w]+(.com|.net|.org)', pageString)
+    searchMatch = re.findall('([a-z]+@\w+\.\w{3})', pageString,re.I)
     return searchMatch
 
 def validateSite(site):
     # find site ending then split based on that ending
-    endingMatch = re.search('.com/|.net/|.org/')
+    endingMatch = re.search('.com/|.net/|.org/',site)
     if endingMatch is not None:
         ending = endingMatch.group(0)
     else:
@@ -131,47 +131,44 @@ def validateSite(site):
 
 def scrapeAddress(soup):
     #look through entire page for address in form of ## stname sttype town Mass Zip
-    addresses = []
     pageString = getPageString(soup.findAll(True))
     massMatchers = [' MA ',' massachusetts ',' ma. ']
     for matcher in massMatchers:
         for stType in zips.streetTypes():
-            regex = '(\d+)' + '(\D+)' + re.escape(stType) + '(\D+)' + re.escape(matcher) + '(\d+){5}'
+            regex = '(\d+)' + '(\D+)' + re.escape(stType) + '(\D+)' + re.escape(matcher) + '(\d{5})'
             searchMatch = re.search(regex,pageString,re.I)
             if searchMatch is not None:
-                addresses.append(searchMatch.string[searchMatch.span()[0]:searchMatch.span()[1]])
+                return searchMatch.string[searchMatch.span()[0]:searchMatch.span()[1]]
     # get rid of repeats and eliminate any matches that
     # have unwanted data (i.e. phone num before building ##)
-    return makeUnique(addresses)
+    return None
 
 def scrapePOBox(soup):
     #look through entire page for PoBox in form of poBox ## town Mass Zip
-    poBoxes = []
     pageString = getPageString(soup.findAll(True))
     massMatchers = [' MA ',' massachusetts ']
     poBoxMatchers = [' P.O. box ', ' PO box ',' P.O box ',' PO. box ']
     for matcher in massMatchers:
         for boxMatcher in poBoxMatchers:
-            regex = re.escape(boxMatcher) + '(\d+)' + '(\D+)' + re.escape(matcher) + '(\d+){5}'
+            regex = re.escape(boxMatcher) + '(\d+)' + '(\D+)' + re.escape(matcher) + '(\d{5})'
             searchMatch = re.search(regex,pageString,re.I)
             if searchMatch is not None:
-                poBoxes.append(searchMatch.string[searchMatch.span()[0]:searchMatch.span()[1]])
+                return searchMatch.string[searchMatch.span()[0]:searchMatch.span()[1]]
     # get rid of repeats
-    return makeUnique(poBoxes)
+    return None
 
 def scrapeTown(soup):
     #look through entire page for town in form of town mass Zip
-    towns = []
     pageString = getPageString(soup.findAll(True))
     massMatchers = [' MA ',' massachusetts ',' ma. ']
     for matcher in massMatchers:
         for town in zips.towns():
-            regex = re.escape(town) + re.escape(matcher) + '(\d+){5}'
+            regex = re.escape(town) + re.escape(matcher) + '(\d{5})'
             searchMatch = re.search(regex,pageString,re.I)
             if searchMatch is not None:
-                towns.append(searchMatch.string[searchMatch.span()[0]:searchMatch.span()[1]])
+                return searchMatch.string[searchMatch.span()[0]:searchMatch.span()[1]]
     # get rid of repeats
-    return makeUnique(towns)
+    return None
 
 def getOverLap(str1,str2):
     #Finds the longest overlap between two strings. Finds matching characters
@@ -215,7 +212,7 @@ def scrapeCompNameCopyright(homepageSoup):
     eligibleCopyright = []
     #pull out any text that contains "copyright" or "all rights reserved"
     for tag in tags:
-        if re.search("copyright|all rights reserved|\xA9",tag.text,re.I):
+        if re.search("copyright|\xA9",tag.text,re.I):
             if re.search("\{|\}",tag.text,re.I):
                 # Eliminate any accidental javascript
                 continue
@@ -228,27 +225,14 @@ def scrapeCompNameCopyright(homepageSoup):
         # to pull comp name from
         strings = list(dict.fromkeys(eligibleCopyright))
         copyrightString = max(strings,key=len)
-        # copyright usually goes "copyright (symbol) year compName" so searching
-        # for the year and any other non alphabetical characters following it (|,- etc.)
-        match = re.search('(\d+)[^a-z]+',copyrightString,re.I)
-        if match is not None:
-            # widdle the string down by chopping off copyright and year part
-            # search for all characters up until .,;| -> the characters are returned
-            # as the company name
-            newString = copyrightString[match.span()[1]:]
+        # the compName is found between "copyright"/symbol and the first deliminating
+        # character (.,;|)
+        noYearMatch = re.search('(\xA9|copyright)[^a-z]+',copyrightString,re.I)
+        if noYearMatch is not None:
+            newString = copyrightString[noYearMatch.span()[1]:]
             nameMatch = re.search('[^.,;\|]+',newString,re.I)
             if nameMatch is not None:
                 return newString[nameMatch.span()[0]:nameMatch.span()[1]]
-        else:
-            # do same thing as if match hit but instead of looking after the year
-            # the compName is found between "copyright"/symbol and the first deliminating
-            # character (.,;| etc.)
-            noYearMatch = re.search('(\xA9|copyright)[^a-z]+',copyrightString,re.I)
-            if noYearMatch is not None:
-                newString = copyrightString[noYearMatch.span()[1]:]
-                nameMatch = re.search('[^.,;\|]+',newString,re.I)
-                if nameMatch is not None:
-                    return newString[nameMatch.span()[0]:nameMatch.span()[1]]
     return None
 
 def scrapeCompName(homepageSoup,contSoup=None):
@@ -269,44 +253,60 @@ def scrapeCompName(homepageSoup,contSoup=None):
         return compName
     return None
 
-def getTownFromLoc(locArray):
+def getTownFromLoc(location):
     # Loops through all towns in mass and finds match in the location.
     # find longest so as to match "East Bridgewater" and not just "Bridgewater"
-    locTowns = []
-    for loc in locArray:
-        record = ""
-        for town in zips.towns():
-            if town.lower() in loc.lower() and len(town) > len(record):
-                record = town
-            else:
-                continue
-        locTowns.append(record)
-    return locTowns
+    record = ""
+    for town in zips.towns():
+        if town.lower() in location.lower() and len(town) > len(record):
+            record = town
+        else:
+            continue
+    if record != "":
+        return record
+    else:
+        return None
 
-def getZipFromLoc(locArray):
+def getZipFromLoc(location):
     # Loops through all zips in mass and finds match in the location.
-    locZips = []
-    for loc in locArray:
-        for zip in zips.zips():
-            if zip in loc:
-                locZips.append(zip)
-    return locZips
+    for zip in zips.zips():
+        if zip in location:
+            return zip
+    return None
 
-def printEmails(emails,index,infoCol,emailCol,workbook):
+def reportEmails(emails,index,infoCol,emailCol,worksheet):
+    #print out emails to worksheet. any email start matching the list gets printed
+    # out to info column and rest get printed out horizontally each in new cell
     infoNames = ["info","office","marketing","sales"]
     nonInfoNum = 0
-    for email in emails:
+    for i,email in enumerate(emails):
         emailName = email.split("@")[0]
-        infoEmail = False
         for starter in infoNames:
             if starter == emailName:
-                workbook.write(index,infoCol,email)
-                infoEmail = True
-        if infoEmail:
-            continue
-        else:
-            col = emailCol + nonInfoNum
-            workbook.write(index,col,email)
-            nonInfoNum = nonInfoNum + 1
+                worksheet.write(index,infoCol,email)
+                for x in range(len(emails)-i-1):
+                    col = emailCol + nonInfoNum
+                    worksheet.write(index,col,emails[i+x+1])
+                    nonInfoNum = nonInfoNum + 1
+                return
+        col = emailCol + nonInfoNum
+        worksheet.write(index,col,email)
+        nonInfoNum = nonInfoNum + 1
+    worksheet.write(index,infoCol ,"None")
+    return
 
-    return 0
+def scrapeBestAddress(soup,shouldScrapeTown = False):
+    bestAddress = scrapeAddress(soup)
+    if bestAddress is not None:
+        print("Address: ",bestAddress)
+        return bestAddress
+    bestAddress = scrapePOBox(soup)
+    if bestAddress is not None:
+        print("P.O. Box: ",bestAddress)
+        return bestAddress
+    if shouldScrapeTown:
+        bestAddress = scrapeTown(soup)
+        if bestAddress is not None:
+            print("Town: ",bestAddress)
+            return bestAddress
+    return None

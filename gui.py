@@ -23,8 +23,8 @@ def on_leave(e):
 #call main scraping function when search button is clicked
 def runScraping():
     #create new thread so gui can be responsive during search
-    # thread1 = threading.Thread(target=main.main,args=[window,statusLabel,searchEntry])
-    # thread1.start()
+    thread1 = threading.Thread(target=main.main,args=[window,statusLabel,searchEntry])
+    thread1.start()
     # statusLabel["text"] = "Please enter query"
     window.update_idletasks()
 

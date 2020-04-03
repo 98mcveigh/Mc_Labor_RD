@@ -20,7 +20,7 @@ def main(window,statusLabel,searchEntry):
     #setup excel sheet to print results to
     workbookName = '_'.join(query.split())
 
-    workbook = xlsxwriter.Workbook(settingsDict['saveDirectory'] + workbookName + '.xlsx')
+    workbook = xlsxwriter.Workbook(settingsDict['saveDirectory'] + "/" + workbookName + '.xlsx')
 
     worksheet = workbook.add_worksheet()
 
@@ -37,22 +37,29 @@ def main(window,statusLabel,searchEntry):
     noScrapeCol = 12 #???????????
     errorCol = 17    #???????????
 
-    index = 2
+    titleRow = 2
+    index = 3
     errorIndex = 2
     noScrapeIndex = 2
     statusIndex = 1
     worksheet.write(0,0, "Google Search: ")
-    worksheet.write(0,2, query)
-    worksheet.write(1,compNameCol, "Company Name")
-    worksheet.write(1,locCol, "Mailing Address")
-    worksheet.write(1,townCol, "Mailing City")
-    worksheet.write(1,stateCol, "Mailing State")
-    worksheet.write(1,zipCol, "Mailing Zip Code")
-    worksheet.write(1,phoneCol, "Phone Number Combined")
-    worksheet.write(1,infoCol, "Email Address (Info)")
-    worksheet.write(1,siteCol, "Website Address")
-    worksheet.write(1,emailCol, "Contact Emails")
-
+    worksheet.write(0,1, query)
+    worksheet.write(1,0, "Number of Google Results Searched: ")
+    worksheet.write(1,2, str(settingsDict['numGoogResults']))
+    worksheet.write(titleRow,compNameCol, "Company Name")
+    worksheet.write(titleRow,locCol, "Mailing Address")
+    worksheet.write(titleRow,townCol, "Mailing City")
+    worksheet.write(titleRow,stateCol, "Mailing State")
+    worksheet.write(titleRow,zipCol, "Mailing Zip Code")
+    worksheet.write(titleRow,phoneCol, "Phone Number Combined")
+    worksheet.write(titleRow,infoCol, "Email Address (Info)")
+    worksheet.write(titleRow,siteCol, "Website Address")
+    worksheet.write(titleRow,emailCol, "Contact Emails")
+    worksheet.set_column(0,2,20)
+    worksheet.set_column(2,4,15)
+    worksheet.set_column(5,6,20)
+    worksheet.set_column(7,7,30)
+    worksheet.set_column(8,15,25)
     # worksheet.write(1,noScrapeCol, "Sites Where Not Allowed")
     # worksheet.write(1,errorCol, "Sites Encountered Unknown Error")
 
@@ -62,15 +69,18 @@ def main(window,statusLabel,searchEntry):
 
     #search google for sites and collect only those that are homepages and
     # about pages (avoiding things like angies list)
+
     for site in search(query, tld='com', lang='en', num=10, start=0, stop=settingsDict['numGoogResults'], pause=2.0):
         cleanValidSite = Scraper.validateSite(site)
         if cleanValidSite is not None:
             print(site)
             goodSites.append(cleanValidSite)
+
     print()
     print()
     #eliminate any site repeats
     goodSites = Scraper.makeUnique(goodSites)
+    badSites = []
     for site in goodSites:
         #update gui
         siteProgress = str(statusIndex) + "/" + str(len(goodSites))
@@ -87,13 +97,11 @@ def main(window,statusLabel,searchEntry):
         try:
             homepageSoup = BeautifulSoup(requests.get(site,timeout=3.0).content,"lxml")
         except:
-            worksheet.write(errorIndex,errorCol, site)
-            errorIndex = errorIndex + 1
+            badSites.append(site)
             print(site + " is not accessible")
             continue
         if not Scraper.isAllowedToScrape(site,homepageSoup):
-            worksheet.write(noScrapeIndex,noScrapeCol, site)
-            noScrapeIndex = noScrapeIndex + 1
+            badSites.append(site)
             print(site + " does not allow scraping")
             continue
 
@@ -139,50 +147,47 @@ def main(window,statusLabel,searchEntry):
             # add new emails found on contact page, make all unique and report
             emails = Scraper.makeUnique(emails + Scraper.scrapeEmail(contSoup))
             if emails != []:
-                # TODO: new email each horiz cell
-                worksheet.write(index, emailCol, ','.join(emails))
+                Scraper.reportEmails(emails,index,infoCol,emailCol,worksheet)
             else:
-                worksheet.write(index, emailCol, "None")
+                worksheet.write(index, infoCol, "None")
             print("Emails: ", emails)
 
             #find best address prioritizing full address -> PO Box -> just town
-            bestAddress = Scraper.scrapeAddress(contSoup)
-            if bestAddress != []:
-                worksheet.write(index,locCol,','.join(bestAddress))
-                print("Address: ",bestAddress)
-            else:
-                bestAddress = Scraper.scrapePOBox(contSoup)
-                if bestAddress != []:
-                    worksheet.write(index,locCol,','.join(bestAddress))
-                    print("P.O. Box: ",bestAddress)
-                else:
-                    bestAddress = Scraper.scrapeTown(contSoup)
-                    if bestAddress != []:
-                        worksheet.write(index,locCol,','.join(bestAddress))
-                        print("Town: ",bestAddress)
-                    else:
-                        worksheet.write(index,locCol,"None")
-                        print("No Address, P.O. Box or Town could be found.")
-            # report out whatever the best address is and continue to next site
-            if bestAddress != []:
+            bestAddress = Scraper.scrapeBestAddress(contSoup,True)
+            if bestAddress is not None:
+                worksheet.write(index,locCol,bestAddress)
                 town = Scraper.getTownFromLoc(bestAddress)
-                worksheet.write(index,townCol,','.join(town))
+                worksheet.write(index,townCol,town)
                 zip = Scraper.getZipFromLoc(bestAddress)
-                worksheet.write(#####################FILL THIS IN##########################)
+                worksheet.write(index,zipCol,zip)
+                worksheet.write(index,stateCol,"MA") #scraper only functional for MA 4-3-2020
             else:
                 worksheet.write(index,townCol,"None")
                 print("None")
             index = index + 1
 
         else:
-            # if there is no contact page report out emails and company name
+            # if there is no contact page report out emails,location and company name
             # and continue to next site
             if emails != []:
-                # TODO: make each email new cell horiz
-                worksheet.write(index, emailCol, ','.join(emails))
+                Scraper.reportEmails(emails,index,infoCol,emailCol,worksheet)
             else:
-                worksheet.write(index, emailCol, "None")
-            worksheet.write(index, locCol, "None")
+                worksheet.write(index, infoCol, "None")
+
+            #Only look for specific addresses or po boxes on front page in case
+            # of site listing available towns for work
+            bestAddress = Scraper.scrapeBestAddress(homepageSoup)
+            if bestAddress is not None:
+                worksheet.write(index,locCol,bestAddress)
+                town = Scraper.getTownFromLoc(bestAddress)
+                worksheet.write(index,townCol,town)
+                zip = Scraper.getZipFromLoc(bestAddress)
+                worksheet.write(index,zipCol,zip)
+                worksheet.write(index,stateCol,"MA") #scraper only functional for MA 4-3-2020
+            else:
+                worksheet.write(index,townCol,"None")
+                print("None")
+
             compName = Scraper.scrapeCompName(homepageSoup)
             if compName is not None:
                 worksheet.write(index, compNameCol, compName)
@@ -193,6 +198,12 @@ def main(window,statusLabel,searchEntry):
             print("Emails: ", emails)
             print("Contact Page was not Accessible")
             index = index + 1
+    index = index + 1
+    worksheet.write(index,siteCol,"Inaccessible Sites:")
+    index = index + 1
+    for badSite in badSites:
+        worksheet.write(index,siteCol,badSite)
+        index = index + 1
     workbook.close()
     statusLabel["text"] = "Collection Complete - Enter New Search"
     window.update_idletasks()
