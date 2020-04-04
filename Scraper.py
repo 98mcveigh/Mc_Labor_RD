@@ -298,16 +298,13 @@ def reportEmails(emails,index,infoCol,emailCol,worksheet):
 def scrapeBestAddress(soup,shouldScrapeTown = False):
     bestAddress = scrapeAddress(soup)
     if bestAddress is not None:
-        print("Address: ",bestAddress)
         return bestAddress
     bestAddress = scrapePOBox(soup)
     if bestAddress is not None:
-        print("P.O. Box: ",bestAddress)
         return bestAddress
     if shouldScrapeTown:
         bestAddress = scrapeTown(soup)
         if bestAddress is not None:
-            print("Town: ",bestAddress)
             return bestAddress
     return None
 

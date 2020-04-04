@@ -6,13 +6,38 @@ import requests
 import re
 import xlsxwriter
 import pickle
+import time
 
-def main(window,statusLabel,searchEntry):
+
+def runMainLoop(window,statusLabel,searchEntry,startStopQueueButton,queueLabels,searchIsRunning):
+    delay = 15
+    for x in range(len(queueLabels)):
+        if startStopQueueButton["text"] == "Pause Queue":
+            main(window,statusLabel,queueLabels[0]["text"],searchIsRunning)
+            queueLabels[0].destroy()
+            queueLabels.pop(0)
+            if len(queueLabels) > 0:
+                for mins in range(delay):
+                    if startStopQueueButton["text"] == "Pause Queue":
+                        statusLabel["text"] = str(delay - mins) + " mins until next search"
+                        time.sleep(60)
+                    else:
+                        statusLabel["text"] == "Queue Paused"
+                        searchIsRunning[0] = False
+                        return
+        else:
+            statusLabel["text"] == "Queue Paused"
+            searchIsRunning[0] = False
+            return
+    startStopQueueButton["text"] = "Begin Queue"
+    statusLabel["text"] = "Queue Completed"
+
+def main(window,statusLabel,query,searchIsRunning):
     # Collect settings and entered query
+    searchIsRunning[0] = True
     settingsFile = open("settings.dat","rb")
     settingsDict = pickle.load(settingsFile)
     settingsFile.close()
-    query = searchEntry.get()
     if query == '':
         statusLabel["text"] = "Please enter query"
         return
@@ -33,11 +58,8 @@ def main(window,statusLabel,searchEntry):
     infoCol = 6
     siteCol = 7
     emailCol = 8
-
-    noScrapeCol = 12 #???????????
-    errorCol = 17    #???????????
-
     titleRow = 2
+
     index = 3
     errorIndex = 2
     noScrapeIndex = 2
@@ -117,10 +139,9 @@ def main(window,statusLabel,searchEntry):
                 else:
                     worksheet.write(index, compNameCol, "")
 
-                phoneNums = Scraper.scrapePhoneNumber(contSoup)
+                phoneNums = Scraper.scrapePhoneNumber(homepageSoup)
                 if phoneNums:
                     worksheet.write(index,phoneCol,','.join(phoneNums))
-
                 index = index + 1
                 continue
 
@@ -170,7 +191,7 @@ def main(window,statusLabel,searchEntry):
             else:
                 worksheet.write(index,townCol,"")
 
-            phoneNums = Scraper.scrapePhoneNumber(contSoup)
+            phoneNums = Scraper.scrapePhoneNumber(homepageSoup)
             if phoneNums:
                 worksheet.write(index,phoneCol,','.join(phoneNums))
 
@@ -185,5 +206,6 @@ def main(window,statusLabel,searchEntry):
         worksheet.write(index,siteCol,badSite)
         index = index + 1
     workbook.close()
-    statusLabel["text"] = "Collection Complete - Enter New Search"
+    statusLabel["text"] = "Collection Complete"
     window.update_idletasks()
+    searchIsRunning[0] = False
