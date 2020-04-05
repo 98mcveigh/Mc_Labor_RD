@@ -1,4 +1,4 @@
-import Scraper
+import McLaborScraper.Scraper as Scraper
 from bs4 import BeautifulSoup
 from googlesearch import search
 from lxml import html
@@ -8,19 +8,22 @@ import xlsxwriter
 import pickle
 import time
 
+def printer():
+    print("heloo")
 
-def runMainLoop(window,statusLabel,searchEntry,startStopQueueButton,queueLabels,searchIsRunning):
+
+def runScrapingLoop(window,statusLabel,searchEntry,startStopQueueButton,queueLabels,searchIsRunning):
     delay = 15
     for x in range(len(queueLabels)):
         if startStopQueueButton["text"] == "Pause Queue":
-            main(window,statusLabel,queueLabels[0]["text"],searchIsRunning)
+            scrape(window,statusLabel,queueLabels[0]["text"],searchIsRunning)
             queueLabels[0].destroy()
             queueLabels.pop(0)
             if len(queueLabels) > 0:
                 for mins in range(delay):
                     if startStopQueueButton["text"] == "Pause Queue":
                         statusLabel["text"] = str(delay - mins) + " mins until next search"
-                        time.sleep(60)
+                        time.sleep(1)
                     else:
                         statusLabel["text"] == "Queue Paused"
                         searchIsRunning[0] = False
@@ -32,7 +35,7 @@ def runMainLoop(window,statusLabel,searchEntry,startStopQueueButton,queueLabels,
     startStopQueueButton["text"] = "Begin Queue"
     statusLabel["text"] = "Queue Completed"
 
-def main(window,statusLabel,query,searchIsRunning):
+def scrape(window,statusLabel,query,searchIsRunning):
     # Collect settings and entered query
     searchIsRunning[0] = True
     settingsFile = open("settings.dat","rb")
@@ -131,7 +134,7 @@ def main(window,statusLabel,query,searchIsRunning):
                 # if contact page can not be scraped report out emails and collect
                 # and report out company name and continue to next site
                 if emails != []:
-                    Scraper.reportEmails(emails,infoCol,emailCol,workbook)
+                    Scraper.reportEmails(emails,infoCol,emailCol,worksheet)
 
                 compName = Scraper.scrapeCompName(homepageSoup)
                 if compName is not None:

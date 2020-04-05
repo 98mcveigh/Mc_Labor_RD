@@ -57,13 +57,13 @@ def changeSettings():
     saveFile = open("settings.dat","rb")
     settingDict = pickle.load(saveFile)
     saveFile.close()
+
     def getDir():
         settingDict['saveDirectory'] = filedialog.askdirectory()
         init.focus_force()
 
     def saveSettings():
         settingDict['numGoogResults'] = slider.get()
-        print("Saving Settings...   ",settingDict)
         settingFile = open("settings.dat","wb")
         pickle.dump(settingDict,settingFile)
         settingFile.close()
