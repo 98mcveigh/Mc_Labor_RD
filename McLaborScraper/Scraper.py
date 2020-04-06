@@ -3,7 +3,7 @@ from googlesearch import search
 from lxml import html
 import requests
 import re
-import zips
+from McLaborScraper.inc.zips import towns,zips,streetTypes
 
 def getContactPage(site,siteSoup):
     #get ending of website (.com,.org,.net,...)
@@ -134,7 +134,7 @@ def scrapeAddress(soup):
     pageString = getPageString(soup.findAll(True))
     massMatchers = [' MA ',' massachusetts ',' ma. ']
     for matcher in massMatchers:
-        for stType in zips.streetTypes():
+        for stType in streetTypes():
             regex = '(\d+)' + '(\D+)' + re.escape(stType) + '(\D+)' + re.escape(matcher) + '(\d{5})'
             searchMatch = re.search(regex,pageString,re.I)
             if searchMatch is not None:
@@ -162,7 +162,7 @@ def scrapeTown(soup):
     pageString = getPageString(soup.findAll(True))
     massMatchers = [' MA ',' massachusetts ',' ma. ']
     for matcher in massMatchers:
-        for town in zips.towns():
+        for town in towns():
             regex = re.escape(town) + re.escape(matcher) + '(\d{5})'
             searchMatch = re.search(regex,pageString,re.I)
             if searchMatch is not None:
@@ -257,7 +257,7 @@ def getTownFromLoc(location):
     # Loops through all towns in mass and finds match in the location.
     # find longest so as to match "East Bridgewater" and not just "Bridgewater"
     record = ""
-    for town in zips.towns():
+    for town in towns():
         if town.lower() in location.lower() and len(town) > len(record):
             record = town
         else:
@@ -269,7 +269,7 @@ def getTownFromLoc(location):
 
 def getZipFromLoc(location):
     # Loops through all zips in mass and finds match in the location.
-    for zip in zips.zips():
+    for zip in zips():
         if zip in location:
             return zip
     return None
@@ -298,16 +298,13 @@ def reportEmails(emails,index,infoCol,emailCol,worksheet):
 def scrapeBestAddress(soup,shouldScrapeTown = False):
     bestAddress = scrapeAddress(soup)
     if bestAddress is not None:
-        print("Address: ",bestAddress)
         return bestAddress
     bestAddress = scrapePOBox(soup)
     if bestAddress is not None:
-        print("P.O. Box: ",bestAddress)
         return bestAddress
     if shouldScrapeTown:
         bestAddress = scrapeTown(soup)
         if bestAddress is not None:
-            print("Town: ",bestAddress)
             return bestAddress
     return None
 

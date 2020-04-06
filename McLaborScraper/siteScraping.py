@@ -1,4 +1,4 @@
-import Scraper
+import McLaborScraper.Scraper as Scraper
 from bs4 import BeautifulSoup
 from googlesearch import search
 from lxml import html
@@ -6,16 +6,40 @@ import requests
 import re
 import xlsxwriter
 import pickle
+import time
 
-def main(window,statusLabel,searchEntry):
+def runScrapingLoop(gui):
+    delay = 15
+    if len(gui.queueLabels) > 0:
+        if gui.startStopQueueButton["text"] == "Pause Queue":
+            query = gui.queueLabels[0]["text"]
+            gui.queueLabels[0].destroy()
+            gui.queueLabels.pop(0)
+            scrape(gui,query,False)
+            if len(gui.queueLabels) > 0:
+                for mins in range(delay):
+                    if gui.startStopQueueButton["text"] == "Pause Queue":
+                        gui.statusLabel["text"] = str(delay - mins) + " mins until next search"
+                        time.sleep(1)
+                    else:
+                        gui.statusLabel["text"] = "Queue Completed"
+                        gui.searchIsRunning[0] = False
+                        return
+                runScrapingLoop(gui)
+    gui.startStopQueueButton["text"] = "Begin Queue"
+    gui.statusLabel["text"] = "Queue Completed"
+    gui.searchIsRunning[0] = False
+    return
+
+
+def scrape(gui,query,isIndividual = True):
     # Collect settings and entered query
+
+    gui.searchIsRunning[0] = True
+    gui.currentSearch["text"] = "Searching " + query
     settingsFile = open("settings.dat","rb")
     settingsDict = pickle.load(settingsFile)
     settingsFile.close()
-    query = searchEntry.get()
-    if query == '':
-        statusLabel["text"] = "Please enter query"
-        return
 
     #setup excel sheet to print results to
     workbookName = '_'.join(query.split())
@@ -33,11 +57,8 @@ def main(window,statusLabel,searchEntry):
     infoCol = 6
     siteCol = 7
     emailCol = 8
-
-    noScrapeCol = 12 #???????????
-    errorCol = 17    #???????????
-
     titleRow = 2
+
     index = 3
     errorIndex = 2
     noScrapeIndex = 2
@@ -64,8 +85,8 @@ def main(window,statusLabel,searchEntry):
     # worksheet.write(1,errorCol, "Sites Encountered Unknown Error")
 
     goodSites = []
-    statusLabel["text"] = "Collecting sites..."
-    window.update_idletasks()
+    gui.statusLabel["text"] = "Collecting sites..."
+    gui.window.update_idletasks()
 
     #search google for sites and collect only those that are homepages and
     # about pages (avoiding things like angies list)
@@ -73,24 +94,17 @@ def main(window,statusLabel,searchEntry):
     for site in search(query, tld='com', lang='en', num=10, start=0, stop=settingsDict['numGoogResults'], pause=2.0):
         cleanValidSite = Scraper.validateSite(site)
         if cleanValidSite is not None:
-            print(site)
             goodSites.append(cleanValidSite)
-
-    print()
-    print()
     #eliminate any site repeats
     goodSites = Scraper.makeUnique(goodSites)
     badSites = []
     for site in goodSites:
         #update gui
         siteProgress = str(statusIndex) + "/" + str(len(goodSites))
-        statusLabel["text"] = "Collecting information..." + " " + siteProgress
-        window.update_idletasks()
+        gui.statusLabel["text"] = "Collecting information..." + " " + siteProgress
+        gui.window.update_idletasks()
         statusIndex = statusIndex + 1
-        print()
-        print()
         emails = []
-        print("Finding Information for: " + site)
 
         # Collect homepage content and test for scraping permission.
         # If not available denote on excel sheet the reason
@@ -98,11 +112,9 @@ def main(window,statusLabel,searchEntry):
             homepageSoup = BeautifulSoup(requests.get(site,timeout=3.0).content,"lxml")
         except:
             badSites.append(site)
-            print(site + " is not accessible")
             continue
         if not Scraper.isAllowedToScrape(site,homepageSoup):
             badSites.append(site)
-            print(site + " does not allow scraping")
             continue
 
         #if site can be scraped write site to appropriate
@@ -118,39 +130,29 @@ def main(window,statusLabel,searchEntry):
                 # if contact page can not be scraped report out emails and collect
                 # and report out company name and continue to next site
                 if emails != []:
-                    Scraper.reportEmails(emails,infoCol,emailCol,workbook)
+                    Scraper.reportEmails(emails,infoCol,emailCol,worksheet)
 
                 compName = Scraper.scrapeCompName(homepageSoup)
                 if compName is not None:
                     worksheet.write(index, compNameCol, compName)
-                    print("Company: " + compName)
                 else:
                     worksheet.write(index, compNameCol, "")
-                    print("Company name could not be found")
 
-                phoneNums = Scraper.scrapePhoneNumber(contSoup)
+                phoneNums = Scraper.scrapePhoneNumber(homepageSoup)
                 if phoneNums:
-                    print("Phone Nums: ",phoneNums)
                     worksheet.write(index,phoneCol,','.join(phoneNums))
-
                 index = index + 1
-                print("Emails: ", emails)
-                print("Contact Page Could Not Be Accessed")
                 continue
 
             #collect and report company name
             compName = Scraper.scrapeCompName(homepageSoup,contSoup)
             if compName is not None:
                 worksheet.write(index, compNameCol, compName)
-                print("Company: " + compName)
-            else:
-                print("Company name could not be found")
 
             # add new emails found on contact page, make all unique and report
             emails = Scraper.makeUnique(emails + Scraper.scrapeEmail(contSoup))
             if emails != []:
                 Scraper.reportEmails(emails,index,infoCol,emailCol,worksheet)
-            print("Emails: ", emails)
 
             #find and report all phone numbers found on contact page
             phoneNums = Scraper.scrapePhoneNumber(contSoup)
@@ -188,19 +190,13 @@ def main(window,statusLabel,searchEntry):
             else:
                 worksheet.write(index,townCol,"")
 
-            phoneNums = Scraper.scrapePhoneNumber(contSoup)
+            phoneNums = Scraper.scrapePhoneNumber(homepageSoup)
             if phoneNums:
-                print("Phone Nums: ",phoneNums)
                 worksheet.write(index,phoneCol,','.join(phoneNums))
 
             compName = Scraper.scrapeCompName(homepageSoup)
             if compName is not None:
                 worksheet.write(index, compNameCol, compName)
-                print("Company: " + compName)
-            else:
-                print("Company name could not be found")
-            print("Emails: ", emails)
-            print("Contact Page was not Accessible")
             index = index + 1
     index = index + 1
     worksheet.write(index,siteCol,"Inaccessible Sites:")
@@ -209,5 +205,10 @@ def main(window,statusLabel,searchEntry):
         worksheet.write(index,siteCol,badSite)
         index = index + 1
     workbook.close()
-    statusLabel["text"] = "Collection Complete - Enter New Search"
-    window.update_idletasks()
+
+    if isIndividual:
+        gui.searchIsRunning[0] = False
+
+    gui.currentSearch["text"] = ""
+    gui.statusLabel["text"] = "Collection Complete"
+    gui.window.update_idletasks()
