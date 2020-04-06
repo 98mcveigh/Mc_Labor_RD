@@ -26,16 +26,10 @@ def runScrapingLoop(gui):
                         gui.searchIsRunning[0] = False
                         return
                 runScrapingLoop(gui)
-        else:
-            gui.startStopQueueButton["text"] == "Begin Queue"
-            gui.statusLabel["text"] = "Queue Completed"
-            gui.searchIsRunning[0] = False
-            return
-    else:
-        gui.startStopQueueButton["text"] == "Begin Queue"
-        gui.statusLabel["text"] = "Queue Completed"
-        gui.searchIsRunning[0] = False
-        return
+    gui.startStopQueueButton["text"] = "Begin Queue"
+    gui.statusLabel["text"] = "Queue Completed"
+    gui.searchIsRunning[0] = False
+    return
 
 
 def scrape(gui,query,isIndividual = True):

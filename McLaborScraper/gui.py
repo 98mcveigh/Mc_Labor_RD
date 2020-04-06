@@ -100,15 +100,13 @@ class scraperGui(object):
         e.widget['background'] = "#f4f4f4"
 
     def queue_enter(self,e):
-        e.widget['background'] = "#eeeeee"
+        e.widget['background'] = "#dcc8c8"
 
     def queue_click(self,e):
-        e.widget['background'] = "#e39898"
-        print(e.widget["text"])
-        # for i,entry in enumerate(self.queueLabels):
-        #     if e.widget["text"] == entry["text"]:
-        #         entry.destroy()
-        #         self.queueLabels.pop(i)
+        for i,entry in enumerate(self.queueLabels):
+            if e.widget["text"] == entry["text"]:
+                entry.destroy()
+                self.queueLabels.pop(i)
 
     def queue_leave(self,e):
         e.widget['background'] = "#f4f4f4"
