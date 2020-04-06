@@ -20,7 +20,7 @@ def runScrapingLoop(gui):
                 for mins in range(delay):
                     if gui.startStopQueueButton["text"] == "Pause Queue":
                         gui.statusLabel["text"] = str(delay - mins) + " mins until next search"
-                        time.sleep(1)
+                        time.sleep(60)
                     else:
                         gui.statusLabel["text"] = "Queue Completed"
                         gui.searchIsRunning[0] = False
