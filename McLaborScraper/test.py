@@ -1,3 +1,0 @@
-import siteScraping
-
-siteScraping.printer()

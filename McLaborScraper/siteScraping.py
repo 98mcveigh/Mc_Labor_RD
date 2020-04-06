@@ -8,42 +8,44 @@ import xlsxwriter
 import pickle
 import time
 
-def printer():
-    print("heloo")
-
-
-def runScrapingLoop(window,statusLabel,searchEntry,startStopQueueButton,queueLabels,searchIsRunning):
+def runScrapingLoop(gui):
     delay = 15
-    for x in range(len(queueLabels)):
-        if startStopQueueButton["text"] == "Pause Queue":
-            scrape(window,statusLabel,queueLabels[0]["text"],searchIsRunning)
-            queueLabels[0].destroy()
-            queueLabels.pop(0)
-            if len(queueLabels) > 0:
+    if len(gui.queueLabels) > 0:
+        if gui.startStopQueueButton["text"] == "Pause Queue":
+            query = gui.queueLabels[0]["text"]
+            gui.queueLabels[0].destroy()
+            gui.queueLabels.pop(0)
+            scrape(gui,query,False)
+            if len(gui.queueLabels) > 0:
                 for mins in range(delay):
-                    if startStopQueueButton["text"] == "Pause Queue":
-                        statusLabel["text"] = str(delay - mins) + " mins until next search"
+                    if gui.startStopQueueButton["text"] == "Pause Queue":
+                        gui.statusLabel["text"] = str(delay - mins) + " mins until next search"
                         time.sleep(1)
                     else:
-                        statusLabel["text"] == "Queue Paused"
-                        searchIsRunning[0] = False
+                        gui.statusLabel["text"] = "Queue Completed"
+                        gui.searchIsRunning[0] = False
                         return
+                runScrapingLoop(gui)
         else:
-            statusLabel["text"] == "Queue Paused"
-            searchIsRunning[0] = False
+            gui.startStopQueueButton["text"] == "Begin Queue"
+            gui.statusLabel["text"] = "Queue Completed"
+            gui.searchIsRunning[0] = False
             return
-    startStopQueueButton["text"] = "Begin Queue"
-    statusLabel["text"] = "Queue Completed"
+    else:
+        gui.startStopQueueButton["text"] == "Begin Queue"
+        gui.statusLabel["text"] = "Queue Completed"
+        gui.searchIsRunning[0] = False
+        return
 
-def scrape(window,statusLabel,query,searchIsRunning):
+
+def scrape(gui,query,isIndividual = True):
     # Collect settings and entered query
-    searchIsRunning[0] = True
+
+    gui.searchIsRunning[0] = True
+    gui.currentSearch["text"] = "Searching " + query
     settingsFile = open("settings.dat","rb")
     settingsDict = pickle.load(settingsFile)
     settingsFile.close()
-    if query == '':
-        statusLabel["text"] = "Please enter query"
-        return
 
     #setup excel sheet to print results to
     workbookName = '_'.join(query.split())
@@ -89,8 +91,8 @@ def scrape(window,statusLabel,query,searchIsRunning):
     # worksheet.write(1,errorCol, "Sites Encountered Unknown Error")
 
     goodSites = []
-    statusLabel["text"] = "Collecting sites..."
-    window.update_idletasks()
+    gui.statusLabel["text"] = "Collecting sites..."
+    gui.window.update_idletasks()
 
     #search google for sites and collect only those that are homepages and
     # about pages (avoiding things like angies list)
@@ -105,8 +107,8 @@ def scrape(window,statusLabel,query,searchIsRunning):
     for site in goodSites:
         #update gui
         siteProgress = str(statusIndex) + "/" + str(len(goodSites))
-        statusLabel["text"] = "Collecting information..." + " " + siteProgress
-        window.update_idletasks()
+        gui.statusLabel["text"] = "Collecting information..." + " " + siteProgress
+        gui.window.update_idletasks()
         statusIndex = statusIndex + 1
         emails = []
 
@@ -209,6 +211,10 @@ def scrape(window,statusLabel,query,searchIsRunning):
         worksheet.write(index,siteCol,badSite)
         index = index + 1
     workbook.close()
-    statusLabel["text"] = "Collection Complete"
-    window.update_idletasks()
-    searchIsRunning[0] = False
+
+    if isIndividual:
+        gui.searchIsRunning[0] = False
+
+    gui.currentSearch["text"] = ""
+    gui.statusLabel["text"] = "Collection Complete"
+    gui.window.update_idletasks()
