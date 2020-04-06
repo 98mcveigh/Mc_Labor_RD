@@ -40,8 +40,8 @@ def getInitialSettings():
     sliderLabel = Label(numSearchFrame,text="Number of Google results to search:")
     sliderLabel.place(rely=0.5,relx=0.25,anchor=CENTER)
 
-    slider = Scale(numSearchFrame,from_=0,to=200,orient=HORIZONTAL,resolution=1)
-    slider.set(100)
+    slider = Scale(numSearchFrame,from_=0,to=300,orient=HORIZONTAL,resolution=1)
+    slider.set(150)
     slider.place(rely=0.5,relx=0.75,anchor=CENTER)
 
     finishButton = Button(finishFrame,text="Finish",width=12,command=saveSettings)
@@ -90,7 +90,8 @@ def changeSettings():
     sliderLabel = Label(numSearchFrame,text="Number of Google results to search:")
     sliderLabel.place(rely=0.5,relx=0.25,anchor=CENTER)
 
-    slider = Scale(numSearchFrame,from_=0,to=200,orient=HORIZONTAL,resolution=1)
+    slider = Scale(numSearchFrame,from_=0,to=300,orient=HORIZONTAL,resolution=1)
+    slider.set(150)
     slider.set(settingDict['numGoogResults'])
     slider.place(rely=0.5,relx=0.75,anchor=CENTER)
 

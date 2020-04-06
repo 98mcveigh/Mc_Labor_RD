@@ -292,7 +292,6 @@ def reportEmails(emails,index,infoCol,emailCol,worksheet):
         col = emailCol + nonInfoNum
         worksheet.write(index,col,email)
         nonInfoNum = nonInfoNum + 1
-    worksheet.write(index,infoCol ,"None")
     return
 
 def scrapeBestAddress(soup,shouldScrapeTown = False):
@@ -316,3 +315,12 @@ def scrapePhoneNumber(soup):
     for num in goodNums:
         finalNums.append("(" + num[0:3] + ")" + num[3:7] + "-" + num[8:12])
     return finalNums
+
+def getMinutesSeconds(totalSeconds):
+    seconds = totalSeconds % (24 * 3600)
+    hour = seconds // 3600
+    seconds %= 3600
+    minutes = seconds // 60
+    seconds %= 60
+
+    return "%02d:%02d" % (minutes, seconds)

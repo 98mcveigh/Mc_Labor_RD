@@ -9,7 +9,7 @@ import pickle
 import time
 
 def runScrapingLoop(gui):
-    delay = 15
+    delay = 15*60
     if len(gui.queueLabels) > 0:
         if gui.startStopQueueButton["text"] == "Pause Queue":
             query = gui.queueLabels[0]["text"]
@@ -17,10 +17,10 @@ def runScrapingLoop(gui):
             gui.queueLabels.pop(0)
             scrape(gui,query,False)
             if len(gui.queueLabels) > 0:
-                for mins in range(delay):
+                for secs in range(delay):
                     if gui.startStopQueueButton["text"] == "Pause Queue":
-                        gui.statusLabel["text"] = str(delay - mins) + " mins until next search"
-                        time.sleep(60)
+                        gui.statusLabel["text"] = Scraper.getMinutesSeconds(delay - secs) + " until next search"
+                        time.sleep(1)
                     else:
                         gui.statusLabel["text"] = "Queue Completed"
                         gui.searchIsRunning[0] = False
