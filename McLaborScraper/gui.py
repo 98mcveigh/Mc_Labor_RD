@@ -18,8 +18,7 @@ class scraperGui(object):
         self.window.geometry("500x500")
         self.window.configure(bg="#f4f4f4")
         self.window.minsize(300,500)
-        self.image1 = PhotoImage(file = "McLaborScraper/inc/McLaborCropped2.png")
-        self.window.iconphoto(False,self.image1)
+        self.window.iconbitmap("McLaborScraper/inc/McLaborIcon.ico")
         self.searchIsRunning = [False]
         self.queue = []
         self.queueLabels = []

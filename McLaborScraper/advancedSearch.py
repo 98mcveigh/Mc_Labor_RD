@@ -17,7 +17,7 @@ class advancedSearchGui(object):
         self.window.geometry("400x400")
         self.window.configure(bg="#f4f4f4")
         self.window.resizable(False,False)
-        self.window.iconbitmap("McLaborScraper/inc/mclaborcropped2.ico")
+        self.window.iconbitmap("McLaborScraper/inc/McLaborIcon.ico")
         self.towns = list(dict.fromkeys(towns()))
         self.counties = counties()
         self.townsOrCounties = "Towns"
@@ -37,6 +37,8 @@ class advancedSearchGui(object):
         self.mainEntry.configure(font=("Franklin Gothic Medium",12),insertwidth=1,justify=CENTER)
         self.mainEntry.grid(row=1,columnspan=2,sticky="ew")
         self.mainEntry.bind("<Key>", self.updateExamples)
+        self.mainEntry.bind("<Enter>", self.on_enter)
+        self.mainEntry.bind("<Leave>", self.on_leave)
 
 
         self.townButton = Button(self.entryFrame,borderwidth=0,relief="flat",width=15,text="Town",bg="#c8dcca")
@@ -120,6 +122,8 @@ class advancedSearchGui(object):
 
     def on_enter(self,e):
         self.updateExamples()
+        if e.widget == self.mainEntry:
+            return
         if e.widget["bg"] == "#c8dcca":
             return
         else:
@@ -127,6 +131,8 @@ class advancedSearchGui(object):
 
     def on_leave(self,e):
         self.updateExamples()
+        if e.widget == self.mainEntry:
+            return
         if e.widget["bg"] == "#c8dcca":
             return
         else:

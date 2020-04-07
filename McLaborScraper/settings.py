@@ -7,6 +7,7 @@ def getInitialSettings():
     init.geometry("400x200")
     init.resizable(False,False)
     init.title("Establish Settings")
+    init.iconbitmap("McLaborScraper/inc/McLaborIcon.ico")
     settingDict = {'saveDirectory':None,'numGoogResults':None}
     def getDir():
         settingDict['saveDirectory'] = filedialog.askdirectory()
@@ -54,6 +55,7 @@ def changeSettings():
     init.geometry("400x150")
     init.resizable(False,False)
     init.title("Change Settings")
+    init.iconbitmap("McLaborScraper/inc/McLaborIcon.ico")
     saveFile = open("settings.dat","rb")
     settingDict = pickle.load(saveFile)
     saveFile.close()
