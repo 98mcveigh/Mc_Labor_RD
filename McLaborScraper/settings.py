@@ -29,7 +29,7 @@ def getInitialSettings():
     finishFrame = Frame(init,width=400,height=50)
     finishFrame.place(x=0,y=150)
 
-    titleLabel = Label(highFrame,text="Establish settings. Settings can be changed later.")
+    titleLabel = Label(highFrame,text="Establish settings. Application will begin after completion.")
     titleLabel.place(relx=0.5,rely=0.5,anchor=CENTER)
 
     folderLabel = Label(folderFrame,text="Select folder to store Excel files:")

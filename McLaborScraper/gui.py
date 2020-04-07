@@ -13,6 +13,10 @@ class scraperGui(object):
     def __init__(self):
         super(scraperGui, self).__init__()
         #Create initial window with desired size, color, title and icon
+        try:
+            open("settings.dat")
+        except FileNotFoundError:
+            settings.getInitialSettings()
         self.window = Tk()
         self.window.title("Mc Labor R&D")
         self.window.geometry("500x500")
@@ -95,10 +99,6 @@ class scraperGui(object):
         self.startStopQueueButton.bind("<Enter>", self.on_enter)
         self.startStopQueueButton.bind("<Leave>", self.on_leave)
 
-        try:
-            open("settings.dat")
-        except FileNotFoundError:
-            settings.getInitialSettings()
         self.window.mainloop()
 
 
