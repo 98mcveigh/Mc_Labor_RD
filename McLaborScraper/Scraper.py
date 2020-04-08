@@ -238,7 +238,10 @@ def scrapeCompNameCopyright(homepageSoup):
                 finalString = newString
             nameMatch = re.search('[^.,;\|]+',finalString,re.I)
             if nameMatch is not None:
-                return finalString[nameMatch.span()[0]:nameMatch.span()[1]]
+                compName = finalString[nameMatch.span()[0]:nameMatch.span()[1]]
+                if len(compName) > 40:
+                    return None
+                return compName
     return None
 
 def scrapeCompNameByClearbit(site):
@@ -262,13 +265,13 @@ def scrapeCompName(site,homepageSoup=None,contSoup=None):
     compNameClearbit = scrapeCompNameByClearbit(site)
     if compNameClearbit:
         # print("From Clearbit: ",compNameClearbit)
-        return compNameClearbit
+        return getStringNoSpaces(compNameClearbit)
     if homepageSoup == None:
         return None
     compNameCopyright = scrapeCompNameCopyright(homepageSoup)
     if compNameCopyright:
         # print("From Copyright: ",compNameCopyright)
-        return compNameCopyright
+        return getStringNoSpaces(compNameCopyright)
     # If searching through copyright strings fail, find company name by
     # finding the longest overlap between the homepage title and
     # the contact page
@@ -276,13 +279,13 @@ def scrapeCompName(site,homepageSoup=None,contSoup=None):
         compName = scrapeCompanyNameTitle(homepageSoup,contSoup)
         if compName is not None:
             # print("From Title/Contact: ",compName)
-            return compName
+            return getStringNoSpaces(compName)
     # If title/contact does not work. find longest match between homepage
     # title and homepage content
     compName = scrapeCompanyNameTitle(homepageSoup,homepageSoup)
     if compName is not None:
         # print("From Title/Homepage: ",compName)
-        return compName
+        return getStringNoSpaces(compName)
     return None
 
 def getTownFromLoc(location):
@@ -321,12 +324,12 @@ def scrapeBestAddress(soup,shouldScrapeTown = False):
 
 def scrapePhoneNumber(soup):
     pageString = getPageString(soup.findAll(True))
-    phoneNumMatch = re.findall('(\d{3} \d{3} \d{4})',pageString)
-    goodNums = list(dict.fromkeys(phoneNumMatch))
-    finalNums = []
-    for num in goodNums:
-        finalNums.append("(" + num[0:3] + ")" + num[3:7] + "-" + num[8:12])
-    return finalNums
+    phoneNumMatch = re.search('(\d{3} \d{3} \d{4})',pageString)
+    if phoneNumMatch != None:
+        phoneNum = phoneNumMatch.string[phoneNumMatch.span()[0]:phoneNumMatch.span()[1]]
+        finalNums = "(" + phoneNum[0:3] + ")" + phoneNum[3:7] + "-" + phoneNum[8:12]
+        return finalNums
+    return None
 
 def getMinutesSeconds(totalSeconds):
     seconds = totalSeconds % (24 * 3600)

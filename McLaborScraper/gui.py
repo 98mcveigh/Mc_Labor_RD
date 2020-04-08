@@ -124,7 +124,7 @@ class scraperGui(object):
                 self.updateQueue()
                 return
 
-    def queue_leave(self,e):
+    def queueLeave(self,e):
         e.widget['background'] = "#f4f4f4"
 
     #call site scraping function when search button is clicked
@@ -174,7 +174,7 @@ class scraperGui(object):
         for i in range(seenNum):
             self.queueLabels[i].pack(fill="x")
             self.queueLabels[i].bind("<Enter>", self.queueEnter)
-            self.queueLabels[i].bind("<Leave>", self.queue_leave)
+            self.queueLabels[i].bind("<Leave>", self.queueLeave)
             self.queueLabels[i].bind("<Button-1>", self.queueClick)
             self.configScroll()
         self.queueLabel["text"] = "SEARCH QUEUE (" + str(len(self.queueLabels)) + ") :"

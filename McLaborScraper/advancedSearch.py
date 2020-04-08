@@ -196,7 +196,7 @@ class advancedSearchGui(object):
         resultsPerSearch = self.slider.get()
         timePerResult = 1
         delayPerSearch = 15*60
-        estimate = self.slider.get()*numSearches*(delayPerSearch + (timePerResult*resultsPerSearch))
+        estimate = (self.slider.get()/self.resolution)*numSearches*(delayPerSearch + (timePerResult*resultsPerSearch))
         self.timeEstimate["text"] = self.getTime(estimate)
 
     def addSearchToQueue(self):

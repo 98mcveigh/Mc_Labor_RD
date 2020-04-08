@@ -29,19 +29,25 @@ def formatNewWorkbook(workbook,worksheet,query,settingsDict):
 def reportEmails(emails,sheet,worksheet):
     #print out emails to worksheet. any email start matching the list gets printed
     # out to info column and rest get printed out horizontally each in new cell
-    infoNames = ["info","office","marketing","sales","service"]
+    infoNames = ["info","office","marketing","sales","service","estimating","help","relations","supplierinfo","supplier","store","accounting","accounts"]
     nonInfoNum = 0
+    haveInfo = False
     for i,email in enumerate(emails):
+        isInfo = False
         emailName = email.split("@")[0]
         for starter in infoNames:
             if starter == emailName:
-                worksheet.write(sheet["index"],sheet["infoCol"],email)
-                for x in range(len(emails)-i-1):
-                    col = sheet["emailCol"] + nonInfoNum
-                    worksheet.write(sheet["index"],col,emails[i+x+1])
-                    nonInfoNum = nonInfoNum + 1
-                return
-        col = sheet["emailCol"] + nonInfoNum
-        worksheet.write(sheet["index"],col,email)
-        nonInfoNum = nonInfoNum + 1
+                if haveInfo:
+                    isInfo = True
+                    break
+                else:
+                    worksheet.write(sheet["index"],sheet["infoCol"],email)
+                    isInfo = True
+                    haveInfo = True
+        if isInfo:
+            continue
+        else:
+            col = sheet["emailCol"] + nonInfoNum
+            worksheet.write(sheet["index"],col,email)
+            nonInfoNum = nonInfoNum + 1
     return

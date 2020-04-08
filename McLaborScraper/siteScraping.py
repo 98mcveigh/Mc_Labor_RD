@@ -125,9 +125,9 @@ def scrape(gui,searchObj):
                 if compName is not None:
                     worksheet.write(sheet["index"], sheet["compNameCol"], compName)
 
-                phoneNums = Scraper.scrapePhoneNumber(homepageSoup)
-                if phoneNums:
-                    worksheet.write(sheet["index"],sheet["phoneCol"],','.join(phoneNums))
+                phoneNum = Scraper.scrapePhoneNumber(homepageSoup)
+                if phoneNum:
+                    worksheet.write(sheet["index"],sheet["phoneCol"],phoneNum)
                 sheet["index"] = sheet["index"] + 1
                 continue
 
@@ -142,9 +142,9 @@ def scrape(gui,searchObj):
                 Excel.reportEmails(emails,sheet,worksheet)
 
             #find and report all phone numbers found on contact page
-            phoneNums = Scraper.scrapePhoneNumber(contSoup)
-            if phoneNums:
-                worksheet.write(sheet["index"],sheet["phoneCol"],','.join(phoneNums))
+            phoneNum = Scraper.scrapePhoneNumber(contSoup)
+            if phoneNum:
+                worksheet.write(sheet["index"],sheet["phoneCol"],phoneNum)
             #find best address prioritizing full address -> PO Box -> just town
             bestAddress = Scraper.scrapeBestAddress(contSoup,True)
             if bestAddress is not None:
@@ -173,9 +173,9 @@ def scrape(gui,searchObj):
                 worksheet.write(sheet["index"],sheet["zipCol"],zip)
                 worksheet.write(sheet["index"],sheet["stateCol"],"MA") #scraper only functional for MA 4-3-2020
 
-            phoneNums = Scraper.scrapePhoneNumber(homepageSoup)
-            if phoneNums:
-                worksheet.write(sheet["index"],sheet["phoneCol"],','.join(phoneNums))
+            phoneNum = Scraper.scrapePhoneNumber(homepageSoup)
+            if phoneNum:
+                worksheet.write(sheet["index"],sheet["phoneCol"],phoneNum)
 
             compName = Scraper.scrapeCompName(site,homepageSoup)
             if compName is not None:
