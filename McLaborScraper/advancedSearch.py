@@ -5,6 +5,7 @@ import threading
 from McLaborScraper.inc.zips import zips,towns,counties
 # from inc.zips import zips,towns,counties
 import pickle
+import math
 
 class advancedSearchGui(object):
     """docstring for advancedSearchGui."""
@@ -12,7 +13,7 @@ class advancedSearchGui(object):
     def __init__(self,scraperGui = None):
         super(advancedSearchGui, self).__init__()
         self.scraperGui = scraperGui
-        self.window = Tk()
+        self.window = Toplevel()
         self.window.title("Advanced Search")
         self.window.geometry("400x400")
         self.window.configure(bg="#f4f4f4")
@@ -22,6 +23,7 @@ class advancedSearchGui(object):
         self.counties = counties()
         self.townsOrCounties = "Towns"
         self.settingsDict = {'saveDirectory':None,'numGoogResults':None}
+        self.searchResolution = 100
 
 
         #Entry frame to hold label to enter search and toggle county
@@ -33,13 +35,11 @@ class advancedSearchGui(object):
         self.entryLabel = Label(self.entryFrame,text="Enter Base Search:",bg="#f4f4f4",font=("Franklin Gothic Medium",10))
         self.entryLabel.grid(row=0,columnspan=2,sticky="ew")
 
-        self.mainEntry = Entry(self.entryFrame,borderwidth=0,relief="flat",width=30)
+        self.stringVar = StringVar()
+        self.stringVar.trace("w",self.updateExamples)
+        self.mainEntry = Entry(self.entryFrame,borderwidth=0,relief="flat",width=30,textvariable=self.stringVar)
         self.mainEntry.configure(font=("Franklin Gothic Medium",12),insertwidth=1,justify=CENTER)
         self.mainEntry.grid(row=1,columnspan=2,sticky="ew")
-        self.mainEntry.bind("<Key>", self.updateExamples)
-        self.mainEntry.bind("<Enter>", self.on_enter)
-        self.mainEntry.bind("<Leave>", self.on_leave)
-
 
         self.townButton = Button(self.entryFrame,borderwidth=0,relief="flat",width=15,text="Town",bg="#c8dcca")
         self.townButton.grid(row=2,column=0,sticky="ew")
@@ -77,9 +77,9 @@ class advancedSearchGui(object):
         self.numSearchLabel = Label(self.fileFrame,bg="#f4f4f4",borderwidth=0,text="# Google results to Search",font=("Franklin Gothic Medium",10))
         self.numSearchLabel.grid(row=3,column=0,sticky="s",ipadx=5)
 
-        self.slider = Scale(self.fileFrame,bg="#f4f4f4",from_=0,to=300,orient=HORIZONTAL)
+        self.slider = Scale(self.fileFrame,bg="#f4f4f4",from_=0,to=(12*self.searchResolution),orient=HORIZONTAL,resolution=self.searchResolution)
         self.slider.configure(sliderrelief="flat",bd=0,troughcolor="#cccccc",highlightthickness=0,command=self.updateEstimate)
-        self.slider.set(150)
+        self.slider.set(2*self.searchResolution)
         self.slider.grid(row=3,column=1,sticky="ew")
 
         self.exampleFrame = Frame(self.window)
@@ -118,10 +118,9 @@ class advancedSearchGui(object):
         self.cancelButton.bind("<Button-1>",self.cancel)
 
 
-        self.window.mainloop()
+        # self.window.mainloop()
 
     def on_enter(self,e):
-        self.updateExamples()
         if e.widget == self.mainEntry:
             return
         if e.widget["bg"] == "#c8dcca":
@@ -130,7 +129,6 @@ class advancedSearchGui(object):
             e.widget["bg"] = "#dddddd"
 
     def on_leave(self,e):
-        self.updateExamples()
         if e.widget == self.mainEntry:
             return
         if e.widget["bg"] == "#c8dcca":
@@ -158,11 +156,10 @@ class advancedSearchGui(object):
             self.updateExamples()
             self.updateEstimate()
 
-    def updateExamples(self,e=None):
-        if self.mainEntry.get() == "":
+    def updateExamples(self,*args):
+        string = self.stringVar.get()
+        if string == "":
             string = "..."
-        else:
-            string = self.mainEntry.get()
         if self.townsOrCounties == "Counties":
             list = self.counties
         else:
@@ -199,26 +196,32 @@ class advancedSearchGui(object):
         resultsPerSearch = self.slider.get()
         timePerResult = 1
         delayPerSearch = 15*60
-        estimate = numSearches*(delayPerSearch + (timePerResult*resultsPerSearch))
+        estimate = self.slider.get()*numSearches*(delayPerSearch + (timePerResult*resultsPerSearch))
         self.timeEstimate["text"] = self.getTime(estimate)
 
     def addSearchToQueue(self):
-        self.updateExamples()
         if not self.saveSettings():
             return
+
         if self.mainEntry.get() == "":
             messagebox.showerror("Not Allowed","Must enter valid base search.")
             self.window.focus_force()
             return
         string = self.mainEntry.get()
+
         if self.townsOrCounties == "Counties":
             list = self.counties
         else:
             list = self.towns
+
+        numIterations = int(self.settingsDict['numGoogResults']/self.searchResolution)
+
         for location in list:
-            labelText = string + " " + location + " Ma"
-            self.scraperGui.addToQueue(True,labelText)
+            for iter in range(numIterations):
+                labelText = string + " " + location + " Ma"
+                self.scraperGui.addToQueue(True,labelText,iter,self.searchResolution)
         messagebox.showinfo("Success","Search added to queue. Press \"Begin Queue\" on main screen to begin")
+        self.scraperGui.configScroll()
         self.window.destroy()
 
     def saveSettings(self):

@@ -4,6 +4,7 @@ from lxml import html
 import requests
 import re
 from McLaborScraper.inc.zips import towns,zips,streetTypes
+import json
 
 def getContactPage(site,siteSoup):
     #get ending of website (.com,.org,.net,...)
@@ -11,7 +12,7 @@ def getContactPage(site,siteSoup):
     linkTags = siteSoup.findAll('a', href=True)
     for link in linkTags:
         # Search for any link that contains the word "contact"
-        matchCheck = re.search('contact',link['href'])
+        matchCheck = re.search('contact',link['href'],re.I)
         if matchCheck is not None:
             if siteEnding in matchCheck.string and site != matchCheck.string:
                 #return match if it is an absolute link
@@ -115,7 +116,7 @@ def scrapeEmail(soup):
 
 def validateSite(site):
     # find site ending then split based on that ending
-    endingMatch = re.search('.com/|.net/|.org/',site)
+    endingMatch = re.search('.com/|.net/|.org/',site,re.I)
     if endingMatch is not None:
         ending = endingMatch.group(0)
     else:
@@ -227,17 +228,46 @@ def scrapeCompNameCopyright(homepageSoup):
         copyrightString = max(strings,key=len)
         # the compName is found between "copyright"/symbol and the first deliminating
         # character (.,;|)
-        noYearMatch = re.search('(\xA9|copyright)[^a-z]+',copyrightString,re.I)
-        if noYearMatch is not None:
-            newString = copyrightString[noYearMatch.span()[1]:]
-            nameMatch = re.search('[^.,;\|]+',newString,re.I)
+        firstMatch = re.search('(\xA9|copyright)[^a-z]+',copyrightString,re.I)
+        if firstMatch is not None:
+            newString = copyrightString[firstMatch.span()[1]:]
+            secondMatch = re.search('(\xA9|copyright)[^a-z]+',newString,re.I)
+            if secondMatch is not None:
+                finalString = newString[secondMatch.span()[1]:]
+            else:
+                finalString = newString
+            nameMatch = re.search('[^.,;\|]+',finalString,re.I)
             if nameMatch is not None:
-                return newString[nameMatch.span()[0]:nameMatch.span()[1]]
+                return finalString[nameMatch.span()[0]:nameMatch.span()[1]]
     return None
 
-def scrapeCompName(homepageSoup,contSoup=None):
+def scrapeCompNameByClearbit(site):
+    startPoint = re.search('//',site).span()[1]
+    newString = site[startPoint:]
+    if newString[0:3] == "www":
+        newString = newString[4:]
+    endPoint = re.search('\.\w{3}',newString).span()[1]
+    coreSite = newString[:endPoint]
+    ClearbitSite = "https://autocomplete.clearbit.com/v1/companies/suggest?query=" + coreSite
+    soup = BeautifulSoup(requests.get(ClearbitSite).content,"lxml")
+    results = soup.find('p').text
+    if results != "[]":
+        compNameStart = re.search('\"name\":\"',results).span()[1]
+        compNameString = results[compNameStart:]
+        compName = compNameString[:re.search('\"',compNameString).span()[0]]
+        return compName.encode('utf-8').decode('unicode-escape')
+    return None
+
+def scrapeCompName(site,homepageSoup=None,contSoup=None):
+    compNameClearbit = scrapeCompNameByClearbit(site)
+    if compNameClearbit:
+        # print("From Clearbit: ",compNameClearbit)
+        return compNameClearbit
+    if homepageSoup == None:
+        return None
     compNameCopyright = scrapeCompNameCopyright(homepageSoup)
     if compNameCopyright:
+        # print("From Copyright: ",compNameCopyright)
         return compNameCopyright
     # If searching through copyright strings fail, find company name by
     # finding the longest overlap between the homepage title and
@@ -245,11 +275,13 @@ def scrapeCompName(homepageSoup,contSoup=None):
     if contSoup is not None:
         compName = scrapeCompanyNameTitle(homepageSoup,contSoup)
         if compName is not None:
+            # print("From Title/Contact: ",compName)
             return compName
     # If title/contact does not work. find longest match between homepage
     # title and homepage content
     compName = scrapeCompanyNameTitle(homepageSoup,homepageSoup)
     if compName is not None:
+        # print("From Title/Homepage: ",compName)
         return compName
     return None
 
@@ -273,26 +305,6 @@ def getZipFromLoc(location):
         if zip in location:
             return zip
     return None
-
-def reportEmails(emails,index,infoCol,emailCol,worksheet):
-    #print out emails to worksheet. any email start matching the list gets printed
-    # out to info column and rest get printed out horizontally each in new cell
-    infoNames = ["info","office","marketing","sales"]
-    nonInfoNum = 0
-    for i,email in enumerate(emails):
-        emailName = email.split("@")[0]
-        for starter in infoNames:
-            if starter == emailName:
-                worksheet.write(index,infoCol,email)
-                for x in range(len(emails)-i-1):
-                    col = emailCol + nonInfoNum
-                    worksheet.write(index,col,emails[i+x+1])
-                    nonInfoNum = nonInfoNum + 1
-                return
-        col = emailCol + nonInfoNum
-        worksheet.write(index,col,email)
-        nonInfoNum = nonInfoNum + 1
-    return
 
 def scrapeBestAddress(soup,shouldScrapeTown = False):
     bestAddress = scrapeAddress(soup)

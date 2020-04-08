@@ -2,102 +2,66 @@ import pickle
 from tkinter import *
 from tkinter import filedialog
 
-def getInitialSettings():
-    init = Tk()
-    init.geometry("400x200")
-    init.resizable(False,False)
-    init.title("Establish Settings")
-    init.iconbitmap("McLaborScraper/inc/McLaborIcon.ico")
-    settingDict = {'saveDirectory':None,'numGoogResults':None}
-    def getDir():
-        settingDict['saveDirectory'] = filedialog.askdirectory()
-        init.focus_force()
+class changeSettings(object):
+    """docstring for changeSettings."""
 
-    def saveSettings():
-        settingDict['numGoogResults'] = slider.get()
-        settingFile = open("settings.dat","wb")
-        pickle.dump(settingDict,settingFile)
-        settingFile.close()
-        init.destroy()
+    def __init__(self,mainGui,isInitial = False):
+        super(changeSettings, self).__init__()
+        self.isInitial = isInitial
+        self.init = Toplevel()
+        self.init.geometry("400x200")
+        self.init.resizable(False,False)
+        self.searchResolution = 10
+        self.mainGui = mainGui
+        if self.isInitial:
+            self.init.title("Establish Settings")
+            self.settingsDict = {'saveDirectory':None,'numGoogResults':None}
+            self.instructionsText = "Establish settings. Settings can be changed at anytime."
+        else:
+            self.init.title("Change Settings")
+            saveFile = open("settings.dat","rb")
+            self.settingsDict = pickle.load(saveFile)
+            saveFile.close()
+            self.instructionsText = "Change settings."
 
-    highFrame = Frame(init,width=400,height=50)
-    highFrame.place(x=0,y=0)
-    folderFrame = Frame(init,width=400,height=50)
-    folderFrame.place(x=0,y=50)
-    numSearchFrame = Frame(init,width=400,height=50)
-    numSearchFrame.place(x=0,y=100)
-    finishFrame = Frame(init,width=400,height=50)
-    finishFrame.place(x=0,y=150)
+        self.init.iconbitmap("McLaborScraper/inc/McLaborIcon.ico")
 
-    titleLabel = Label(highFrame,text="Establish settings. Application will begin after completion.")
-    titleLabel.place(relx=0.5,rely=0.5,anchor=CENTER)
+        self.highFrame = Frame(self.init,width=400,height=50)
+        self.highFrame.place(x=0,y=0)
+        self.folderFrame = Frame(self.init,width=400,height=50)
+        self.folderFrame.place(x=0,y=50)
+        self.numSearchFrame = Frame(self.init,width=400,height=50)
+        self.numSearchFrame.place(x=0,y=100)
+        self.finishFrame = Frame(self.init,width=400,height=50)
+        self.finishFrame.place(x=0,y=150)
 
-    folderLabel = Label(folderFrame,text="Select folder to store Excel files:")
-    folderLabel.place(rely=0.5,relx=0.25,anchor=CENTER)
+        self.titleLabel = Label(self.highFrame,text=self.instructionsText)
+        self.titleLabel.place(relx=0.5,rely=0.5,anchor=CENTER)
 
-    folderButton = Button(folderFrame,text="Select Folder...",command=getDir)
-    folderButton.place(rely=0.5,relx=0.75,anchor=CENTER)
+        self.folderLabel = Label(self.folderFrame,text="Select folder to store Excel files:")
+        self.folderLabel.place(rely=0.5,relx=0.25,anchor=CENTER)
 
-    sliderLabel = Label(numSearchFrame,text="Number of Google results to search:")
-    sliderLabel.place(rely=0.5,relx=0.25,anchor=CENTER)
+        self.folderButton = Button(self.folderFrame,text="Select Folder...",command=self.getDir)
+        self.folderButton.place(rely=0.5,relx=0.75,anchor=CENTER)
 
-    slider = Scale(numSearchFrame,from_=0,to=300,orient=HORIZONTAL,resolution=1)
-    slider.set(150)
-    slider.place(rely=0.5,relx=0.75,anchor=CENTER)
+        self.sliderLabel = Label(self.numSearchFrame,text="Number of Google results to search:")
+        self.sliderLabel.place(rely=0.5,relx=0.25,anchor=CENTER)
 
-    finishButton = Button(finishFrame,text="Finish",width=12,command=saveSettings)
-    finishButton.place(rely=0.5,relx=0.5,anchor=CENTER)
+        self.slider = Scale(self.numSearchFrame,from_=0,to=300,orient=HORIZONTAL,resolution=self.searchResolution)
+        self.slider.set(150)
+        self.slider.place(rely=0.5,relx=0.75,anchor=CENTER)
 
-    init.mainloop()
+        self.finishButton = Button(self.finishFrame,text="Finish",width=12,command=self.saveSettings)
+        self.finishButton.place(rely=0.5,relx=0.5,anchor=CENTER)
 
-def changeSettings():
-    init = Tk()
-    init.geometry("400x150")
-    init.resizable(False,False)
-    init.title("Change Settings")
-    init.iconbitmap("McLaborScraper/inc/McLaborIcon.ico")
-    saveFile = open("settings.dat","rb")
-    settingDict = pickle.load(saveFile)
-    saveFile.close()
+    def getDir(self):
+        self.settingsDict['saveDirectory'] = filedialog.askdirectory()
+        self.init.focus_force()
 
-    def getDir():
-        settingDict['saveDirectory'] = filedialog.askdirectory()
-        init.focus_force()
-
-    def saveSettings():
-        settingDict['numGoogResults'] = slider.get()
-        settingFile = open("settings.dat","wb")
-        pickle.dump(settingDict,settingFile)
-        settingFile.close()
-        init.destroy()
-
-    # highFrame = Frame(init,width=400,height=50)
-    # highFrame.place(x=0,y=0)
-    folderFrame = Frame(init,width=400,height=50)
-    folderFrame.place(x=0,y=0)
-    numSearchFrame = Frame(init,width=400,height=50)
-    numSearchFrame.place(x=0,y=50)
-    finishFrame = Frame(init,width=400,height=50)
-    finishFrame.place(x=0,y=100)
-
-    # titleLabel = Label(highFrame,text="Establish settings. Settings can be changed later.")
-    # titleLabel.place(relx=0.5,rely=0.5,anchor=CENTER)
-
-    folderLabel = Label(folderFrame,text="Select folder to store Excel files:")
-    folderLabel.place(rely=0.5,relx=0.25,anchor=CENTER)
-
-    folderButton = Button(folderFrame,text="Select Folder...",command=getDir)
-    folderButton.place(rely=0.5,relx=0.75,anchor=CENTER)
-
-    sliderLabel = Label(numSearchFrame,text="Number of Google results to search:")
-    sliderLabel.place(rely=0.5,relx=0.25,anchor=CENTER)
-
-    slider = Scale(numSearchFrame,from_=0,to=300,orient=HORIZONTAL,resolution=1)
-    slider.set(150)
-    slider.set(settingDict['numGoogResults'])
-    slider.place(rely=0.5,relx=0.75,anchor=CENTER)
-
-    finishButton = Button(finishFrame,text="Finish",width=12,command=saveSettings)
-    finishButton.place(rely=0.5,relx=0.5,anchor=CENTER)
-
-    init.mainloop()
+    def saveSettings(self):
+        self.settingsDict['numGoogResults'] = self.slider.get()
+        self.mainGui.settingsDict = self.settingsDict
+        settingsFile = open("settings.dat","wb")
+        pickle.dump(self.settingsDict,settingsFile)
+        settingsFile.close()
+        self.init.destroy()

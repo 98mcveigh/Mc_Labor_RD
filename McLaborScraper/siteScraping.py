@@ -1,4 +1,5 @@
 import McLaborScraper.Scraper as Scraper
+import McLaborScraper.Excel as Excel
 from bs4 import BeautifulSoup
 from googlesearch import search
 from lxml import html
@@ -12,13 +13,15 @@ def runScrapingLoop(gui):
     delay = 15*60
     if len(gui.queueLabels) > 0:
         if gui.startStopQueueButton["text"] == "Pause Queue":
-            query = gui.queueLabels[0]["text"]
+            searchObject = gui.queue[0]
+            gui.queue.pop(0)
             gui.queueLabels[0].destroy()
             gui.queueLabels.pop(0)
-            scrape(gui,query,False)
-            if len(gui.queueLabels) > 0:
+            gui.updateQueue()
+            scrape(gui,searchObject)
+            if len(gui.queue) > 0:
                 for secs in range(delay):
-                    if gui.startStopQueueButton["text"] == "Pause Queue":
+                    if gui.startStopQueueButton["text"] == "Pause Queue" and len(gui.queue) > 0:
                         gui.statusLabel["text"] = Scraper.getMinutesSeconds(delay - secs) + " until next search"
                         time.sleep(1)
                     else:
@@ -32,9 +35,15 @@ def runScrapingLoop(gui):
     return
 
 
-def scrape(gui,query,isIndividual = True):
+def scrape(gui,searchObj):
+    # print("Entry: ",searchObj.entry)
+    # print("Start: ",searchObj.start)
+    # print("Stop: ",searchObj.stop)
+    # print("Individual?: ",searchObj.isIndividual)
+    # print("Number of this Search (-1): ",searchObj.numOfSearch)
+    # print("Worksheet Settings: ",searchObj.worksheetSettings)
     # Collect settings and entered query
-
+    query = searchObj.entry
     gui.searchIsRunning[0] = True
     gui.currentSearch["text"] = "Searching " + query
     settingsFile = open("settings.dat","rb")
@@ -42,47 +51,27 @@ def scrape(gui,query,isIndividual = True):
     settingsFile.close()
 
     #setup excel sheet to print results to
-    workbookName = '_'.join(query.split())
+    if searchObj.isIndividual:
+        workbookName = '_'.join(query.split())
 
-    workbook = xlsxwriter.Workbook(settingsDict['saveDirectory'] + "/" + workbookName + '.xlsx')
+        workbook = xlsxwriter.Workbook(settingsDict['saveDirectory'] + "/" + workbookName + '.xlsx')
 
-    worksheet = workbook.add_worksheet()
+        worksheet = workbook.add_worksheet()
 
-    compNameCol = 0
-    locCol = 1
-    townCol = 2
-    stateCol = 3
-    zipCol = 4
-    phoneCol = 5
-    infoCol = 6
-    siteCol = 7
-    emailCol = 8
-    titleRow = 2
+        sheet = Excel.formatNewWorkbook(workbook,worksheet,query,settingsDict)
+    elif not searchObj.isIndividual and searchObj.numOfSearch == 0:
+        workbookName = '_'.join(query.split())
 
-    index = 3
-    errorIndex = 2
-    noScrapeIndex = 2
-    statusIndex = 1
-    worksheet.write(0,0, "Google Search: ")
-    worksheet.write(0,1, query)
-    worksheet.write(1,0, "Number of Google Results Searched: ")
-    worksheet.write(1,2, str(settingsDict['numGoogResults']))
-    worksheet.write(titleRow,compNameCol, "Company Name")
-    worksheet.write(titleRow,locCol, "Mailing Address")
-    worksheet.write(titleRow,townCol, "Mailing City")
-    worksheet.write(titleRow,stateCol, "Mailing State")
-    worksheet.write(titleRow,zipCol, "Mailing Zip Code")
-    worksheet.write(titleRow,phoneCol, "Phone Number Combined")
-    worksheet.write(titleRow,infoCol, "Email Address (Info)")
-    worksheet.write(titleRow,siteCol, "Website Address")
-    worksheet.write(titleRow,emailCol, "Contact Emails")
-    worksheet.set_column(0,2,20)
-    worksheet.set_column(2,4,15)
-    worksheet.set_column(5,6,20)
-    worksheet.set_column(7,7,30)
-    worksheet.set_column(8,15,25)
-    # worksheet.write(1,noScrapeCol, "Sites Where Not Allowed")
-    # worksheet.write(1,errorCol, "Sites Encountered Unknown Error")
+        workbook = xlsxwriter.Workbook(settingsDict['saveDirectory'] + "/" + workbookName + '.xlsx')
+
+        worksheet = workbook.add_worksheet()
+
+        sheet = Excel.formatNewWorkbook(workbook,worksheet,query,settingsDict)
+    else:
+        sheet = searchObj.worksheetSettings
+        workbook = sheet["workbook"]
+        worksheet = sheet["worksheet"]
+        sheet["statusIndex"] = 1
 
     goodSites = []
     gui.statusLabel["text"] = "Collecting sites..."
@@ -90,20 +79,20 @@ def scrape(gui,query,isIndividual = True):
 
     #search google for sites and collect only those that are homepages and
     # about pages (avoiding things like angies list)
-
-    for site in search(query, tld='com', lang='en', num=10, start=0, stop=settingsDict['numGoogResults'], pause=2.0):
+    for site in search(query, tld='com', lang='en', num=30, start=searchObj.start, stop=searchObj.stop, pause=4.0):
         cleanValidSite = Scraper.validateSite(site)
         if cleanValidSite is not None:
             goodSites.append(cleanValidSite)
     #eliminate any site repeats
     goodSites = Scraper.makeUnique(goodSites)
+
     badSites = []
     for site in goodSites:
         #update gui
-        siteProgress = str(statusIndex) + "/" + str(len(goodSites))
+        siteProgress = str(sheet["statusIndex"]) + "/" + str(len(goodSites))
         gui.statusLabel["text"] = "Collecting information..." + " " + siteProgress
         gui.window.update_idletasks()
-        statusIndex = statusIndex + 1
+        sheet["statusIndex"] = sheet["statusIndex"] + 1
         emails = []
 
         # Collect homepage content and test for scraping permission.
@@ -119,7 +108,7 @@ def scrape(gui,query,isIndividual = True):
 
         #if site can be scraped write site to appropriate
         # excel cell and collect emails from homepage
-        worksheet.write(index,siteCol, site)
+        worksheet.write(sheet["index"],sheet["siteCol"], site)
         emails = Scraper.makeUnique(emails + Scraper.scrapeEmail(homepageSoup))
         #get contact page and if it is there collect the content.
         contPage = Scraper.getContactPage(site,homepageSoup)
@@ -130,84 +119,92 @@ def scrape(gui,query,isIndividual = True):
                 # if contact page can not be scraped report out emails and collect
                 # and report out company name and continue to next site
                 if emails != []:
-                    Scraper.reportEmails(emails,infoCol,emailCol,worksheet)
+                    Excel.reportEmails(emails,sheet,worksheet)
 
-                compName = Scraper.scrapeCompName(homepageSoup)
+                compName = Scraper.scrapeCompName(site,homepageSoup)
                 if compName is not None:
-                    worksheet.write(index, compNameCol, compName)
-                else:
-                    worksheet.write(index, compNameCol, "")
+                    worksheet.write(sheet["index"], sheet["compNameCol"], compName)
 
                 phoneNums = Scraper.scrapePhoneNumber(homepageSoup)
                 if phoneNums:
-                    worksheet.write(index,phoneCol,','.join(phoneNums))
-                index = index + 1
+                    worksheet.write(sheet["index"],sheet["phoneCol"],','.join(phoneNums))
+                sheet["index"] = sheet["index"] + 1
                 continue
 
             #collect and report company name
-            compName = Scraper.scrapeCompName(homepageSoup,contSoup)
+            compName = Scraper.scrapeCompName(site,homepageSoup,contSoup)
             if compName is not None:
-                worksheet.write(index, compNameCol, compName)
+                worksheet.write(sheet["index"], sheet["compNameCol"], compName)
 
             # add new emails found on contact page, make all unique and report
             emails = Scraper.makeUnique(emails + Scraper.scrapeEmail(contSoup))
             if emails != []:
-                Scraper.reportEmails(emails,index,infoCol,emailCol,worksheet)
+                Excel.reportEmails(emails,sheet,worksheet)
 
             #find and report all phone numbers found on contact page
             phoneNums = Scraper.scrapePhoneNumber(contSoup)
             if phoneNums:
-                worksheet.write(index,phoneCol,','.join(phoneNums))
+                worksheet.write(sheet["index"],sheet["phoneCol"],','.join(phoneNums))
             #find best address prioritizing full address -> PO Box -> just town
             bestAddress = Scraper.scrapeBestAddress(contSoup,True)
             if bestAddress is not None:
-                worksheet.write(index,locCol,bestAddress)
+                worksheet.write(sheet["index"],sheet["locCol"],bestAddress)
                 town = Scraper.getTownFromLoc(bestAddress)
-                worksheet.write(index,townCol,town)
+                worksheet.write(sheet["index"],sheet["townCol"],town)
                 zip = Scraper.getZipFromLoc(bestAddress)
-                worksheet.write(index,zipCol,zip)
-                worksheet.write(index,stateCol,"MA") #scraper only functional for MA 4-3-2020
-            else:
-                worksheet.write(index,townCol,"")
-            index = index + 1
+                worksheet.write(sheet["index"],sheet["zipCol"],zip)
+                worksheet.write(sheet["index"],sheet["stateCol"],"MA") #scraper only functional for MA 4-3-2020
+            sheet["index"] = sheet["index"] + 1
 
         else:
             # if there is no contact page report out emails,location and company name
             # and continue to next site
             if emails != []:
-                Scraper.reportEmails(emails,index,infoCol,emailCol,worksheet)
+                Excel.reportEmails(emails,sheet,worksheet)
 
             #Only look for specific addresses or po boxes on front page in case
             # of site listing available towns for work
             bestAddress = Scraper.scrapeBestAddress(homepageSoup)
             if bestAddress is not None:
-                worksheet.write(index,locCol,bestAddress)
+                worksheet.write(sheet["index"],sheet["locCol"],bestAddress)
                 town = Scraper.getTownFromLoc(bestAddress)
-                worksheet.write(index,townCol,town)
+                worksheet.write(sheet["index"],sheet["townCol"],town)
                 zip = Scraper.getZipFromLoc(bestAddress)
-                worksheet.write(index,zipCol,zip)
-                worksheet.write(index,stateCol,"MA") #scraper only functional for MA 4-3-2020
-            else:
-                worksheet.write(index,townCol,"")
+                worksheet.write(sheet["index"],sheet["zipCol"],zip)
+                worksheet.write(sheet["index"],sheet["stateCol"],"MA") #scraper only functional for MA 4-3-2020
 
             phoneNums = Scraper.scrapePhoneNumber(homepageSoup)
             if phoneNums:
-                worksheet.write(index,phoneCol,','.join(phoneNums))
+                worksheet.write(sheet["index"],sheet["phoneCol"],','.join(phoneNums))
 
-            compName = Scraper.scrapeCompName(homepageSoup)
+            compName = Scraper.scrapeCompName(site,homepageSoup)
             if compName is not None:
-                worksheet.write(index, compNameCol, compName)
-            index = index + 1
-    index = index + 1
-    worksheet.write(index,siteCol,"Inaccessible Sites:")
-    index = index + 1
+                worksheet.write(sheet["index"], sheet["compNameCol"], compName)
+            sheet["index"] = sheet["index"] + 1
+    sheet["index"] = sheet["index"] + 1
+    worksheet.write(sheet["index"],sheet["siteCol"],"Inaccessible Sites:")
+    sheet["index"] = sheet["index"] + 1
     for badSite in badSites:
-        worksheet.write(index,siteCol,badSite)
-        index = index + 1
-    workbook.close()
+        compName = Scraper.scrapeCompName(badSite)
+        if compName is not None:
+            worksheet.write(sheet["index"], sheet["badCompNameCol"], compName)
+        worksheet.write(sheet["index"],sheet["siteCol"],badSite)
+        sheet["index"] = sheet["index"] + 1
 
-    if isIndividual:
+    sheet["index"] = sheet["index"] + 2
+
+    if searchObj.isIndividual or len(gui.queue) == 0:
         gui.searchIsRunning[0] = False
+        workbook.close()
+    elif not searchObj.isIndividual and gui.queue[0].numOfSearch == 0:
+        workbook.close()
+    elif not searchObj.isIndividual and searchObj.numOfSearch == 0:
+        for nextSearch in gui.queue:
+            if nextSearch.numOfSearch == 0:
+                break
+            else:
+                nextSearch.worksheetSettings = sheet
+
 
     gui.currentSearch["text"] = ""
     gui.statusLabel["text"] = "Collection Complete"

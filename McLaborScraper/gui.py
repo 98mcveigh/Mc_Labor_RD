@@ -5,7 +5,8 @@ import McLaborScraper.siteScraping as siteScraping
 import threading
 import McLaborScraper.settings as settings
 import McLaborScraper.advancedSearch as advancedSearch
-
+import McLaborScraper.Search as Search
+import pickle
 
 class scraperGui(object):
     """docstring for scraperGui."""
@@ -13,10 +14,6 @@ class scraperGui(object):
     def __init__(self):
         super(scraperGui, self).__init__()
         #Create initial window with desired size, color, title and icon
-        try:
-            open("settings.dat")
-        except FileNotFoundError:
-            settings.getInitialSettings()
         self.window = Tk()
         self.window.title("Mc Labor R&D")
         self.window.geometry("500x500")
@@ -47,8 +44,8 @@ class scraperGui(object):
         self.searchButton.grid(row=2,column=0,sticky="ew")
 
         #call functions to make search button darker when cursor is over it
-        self.searchButton.bind("<Enter>", self.on_enter)
-        self.searchButton.bind("<Leave>", self.on_leave)
+        self.searchButton.bind("<Enter>", self.onEnter)
+        self.searchButton.bind("<Leave>", self.onLeave)
 
         #Establish frame for status label and place it 3/4 down in the middle
         self.bottomFrame = Frame(self.window)
@@ -64,20 +61,20 @@ class scraperGui(object):
         #create and place more options button to pull up new window for settings
         self.settingsButton = Button(self.advancedFrame,text="Settings",font=("Times New Roman",8),command=self.changeSettings)
         self.settingsButton.configure(bg="#f4f4f4",activebackground = "#bbbbbb",relief = "flat",width=15)
-        self.settingsButton.bind("<Enter>", self.on_enter)
-        self.settingsButton.bind("<Leave>", self.on_leave)
+        self.settingsButton.bind("<Enter>", self.onEnter)
+        self.settingsButton.bind("<Leave>", self.onLeave)
         self.settingsButton.pack(side="left")
 
         self.advancedSearchButton = Button(self.advancedFrame,text="Advanced Search",font=("Times New Roman",8),command=self.advancedSearch)
         self.advancedSearchButton.configure(bg="#f4f4f4",activebackground = "#bbbbbb",relief = "flat",width=15)
-        self.advancedSearchButton.bind("<Enter>", self.on_enter)
-        self.advancedSearchButton.bind("<Leave>", self.on_leave)
+        self.advancedSearchButton.bind("<Enter>", self.onEnter)
+        self.advancedSearchButton.bind("<Leave>", self.onLeave)
         self.advancedSearchButton.pack(side="right")
 
         self.queueButton = Button(self.midFrame,text="Add Search To Queue",bg="#f4f4f4",command=self.addToQueue,width=15)
         self.queueButton.configure(activebackground = "#bbbbbb",relief="flat",font=("Franklin Gothic Medium",10))
-        self.queueButton.bind("<Enter>", self.on_enter)
-        self.queueButton.bind("<Leave>", self.on_leave)
+        self.queueButton.bind("<Enter>", self.onEnter)
+        self.queueButton.bind("<Leave>", self.onLeave)
         self.queueButton.grid(row=2,column=1,sticky="ew")
 
         self.queueFrame = Frame(self.midFrame,bg="#f4f4f4")
@@ -96,28 +93,35 @@ class scraperGui(object):
 
         self.startStopQueueButton = Button(self.midFrame,font=("Franklin Gothic Medium",10),activebackground = "#bbbbbb",relief="flat",text="Begin Queue",bg="#f4f4f4",command=self.runOrPauseQueue,width=30)
         self.startStopQueueButton.grid(row=4,columnspan=2,sticky="ew")
-        self.startStopQueueButton.bind("<Enter>", self.on_enter)
-        self.startStopQueueButton.bind("<Leave>", self.on_leave)
-
+        self.startStopQueueButton.bind("<Enter>", self.onEnter)
+        self.startStopQueueButton.bind("<Leave>", self.onLeave)
+        self.settingsDict = None
+        try:
+            file = open("settings.dat","rb")
+            self.settingsDict = pickle.load(file)
+            file.close()
+        except FileNotFoundError:
+            settings.changeSettings(self,True)
         self.window.mainloop()
 
 
     #make it so search button appears darker when cursor is over it
-    def on_enter(self,e):
+    def onEnter(self,e):
         e.widget['background'] = "#dddddd"
 
-    def on_leave(self,e):
+    def onLeave(self,e):
         e.widget['background'] = "#f4f4f4"
 
-    def queue_enter(self,e):
+    def queueEnter(self,e):
         e.widget['background'] = "#dcc8c8"
 
-    def queue_click(self,e):
+    def queueClick(self,e):
         for i,entry in enumerate(self.queueLabels):
             if e.widget["text"] == entry["text"]:
                 entry.destroy()
                 self.queueLabels.pop(i)
-                self.configScroll()
+                self.queue.pop(i)
+                self.updateQueue()
                 return
 
     def queue_leave(self,e):
@@ -132,7 +136,8 @@ class scraperGui(object):
             if self.searchIsRunning[0]:
                 messagebox.showerror("Not Allowed","Multiple searches can not be run at the same time.")
             else:
-                scraperThread = threading.Thread(target=siteScraping.scrape,args=[self,self.searchEntry.get()])
+                searchObj = Search.Search(self.searchEntry.get(),0,self.settingsDict["numGoogResults"],True)
+                scraperThread = threading.Thread(target=siteScraping.scrape,args=[self,searchObj])
                 scraperThread.start()
                 self.searchEntry.delete(0,'end')
 
@@ -140,23 +145,41 @@ class scraperGui(object):
         if self.searchIsRunning[0]:
             messagebox.showerror("Not Allowed","Must change settings in between searches.")
         else:
-            settings.changeSettings()
+            settings.changeSettings(self)
 
-    def addToQueue(self,fromAdvanced = False,entry = None):
+    def addToQueue(self,fromAdvanced = False,entry = None,iter = 0,resolution = 0):
         if not fromAdvanced:
             if self.searchEntry.get() == "":
                 messagebox.showerror("Not Allowed","Please enter a valid search.")
                 return
             else:
                 self.queueLabels.append(Label(self.scrollFrame,anchor=CENTER,text=self.searchEntry.get(),bg="#f4f4f4",font=("Franklin Gothic Medium",8)))
+                self.queue.append(Search.Search(self.searchEntry.get(),0,self.settingsDict['numGoogResults'],False,0))
                 self.searchEntry.delete(0,'end')
         else:
             self.queueLabels.append(Label(self.scrollFrame,anchor=CENTER,text=entry,bg="#f4f4f4",font=("Franklin Gothic Medium",8)))
-        self.queueLabels[len(self.queueLabels)-1].pack(fill="x")
-        self.queueLabels[len(self.queueLabels)-1].bind("<Enter>", self.queue_enter)
-        self.queueLabels[len(self.queueLabels)-1].bind("<Leave>", self.queue_leave)
-        self.queueLabels[len(self.queueLabels)-1].bind("<Button-1>", self.queue_click)
-        self.configScroll()
+            self.queue.append(Search.Search(entry,((iter)*resolution + 1),resolution,False,iter))
+        self.updateQueue()
+
+
+    def updateQueue(self):
+        if len(self.queueLabels) > 50:
+            self.queueLabel["text"] = "SEARCH QUEUE (" + str(len(self.queueLabels)) + ") :"
+            self.configScroll()
+            return
+        elif len(self.queueLabels) < 50:
+            seenNum = len(self.queueLabels)
+        else:
+            seenNum = 50
+        for i in range(seenNum):
+            self.queueLabels[i].pack(fill="x")
+            self.queueLabels[i].bind("<Enter>", self.queueEnter)
+            self.queueLabels[i].bind("<Leave>", self.queue_leave)
+            self.queueLabels[i].bind("<Button-1>", self.queueClick)
+            self.configScroll()
+        self.queueLabel["text"] = "SEARCH QUEUE (" + str(len(self.queueLabels)) + ") :"
+
+
 
     def runOrPauseQueue(self):
         if len(self.queueLabels) < 1:
