@@ -114,6 +114,14 @@ def scrapeEmail(soup):
     searchMatch = re.findall('([a-z]+@\w+\.\w{3})', pageString,re.I)
     return searchMatch
 
+def testSiteEnding(splits):
+    if ("about" in splits[1] and (len(splits[1].split("/")) < 2 or splits[1].split("/")[1] == '')):
+        return True
+    elif ("contact" in splits[1] and (len(splits[1].split("/")) < 2 or splits[1].split("/")[1] == '')):
+        return True
+    else:
+        return False
+
 def validateSite(site):
     # find site ending then split based on that ending
     endingMatch = re.search('.com/|.net/|.org/',site,re.I)
@@ -124,12 +132,11 @@ def validateSite(site):
     splits = site.split(ending)
     # only want results that are the homepage or the about page
     # to avoid sites like Angies list that advertise lists of companies
-    if splits[1] == '' or ("about" in splits[1] and len(splits[1].split("/")) < 2):
+    if splits[1] == '' or testSiteEnding(splits):
         #return just the homepage site link
         return (splits[0] + ending)
     else:
         return None
-
 def scrapeAddress(soup):
     #look through entire page for address in form of ## stname sttype town Mass Zip
     pageString = getPageString(soup.findAll(True))

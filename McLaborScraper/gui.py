@@ -113,19 +113,53 @@ class scraperGui(object):
         e.widget['background'] = "#f4f4f4"
 
     def queueEnter(self,e):
-        e.widget['background'] = "#dcc8c8"
-
-    def queueClick(self,e):
-        for i,entry in enumerate(self.queueLabels):
-            if e.widget["text"] == entry["text"]:
-                entry.destroy()
-                self.queueLabels.pop(i)
-                self.queue.pop(i)
-                self.updateQueue()
+        for i,item in enumerate(self.queue):
+            if e.widget["text"] == item.entry:
+                widget = e.widget
+                while widget["text"] == item.entry:
+                    self.queueLabels[i]["background"] = "#dcc8c8"
+                    try:
+                        i = i + 1
+                        widget = self.queueLabels[i]
+                    except:
+                        return
                 return
 
+    def queueClick(self,e):
+        for i,label in enumerate(self.queueLabels):
+            if label['background'] == "#dcc8c8":
+                if self.queue[i].isIndividual:
+                    self.queueLabels[i].destroy()
+                    self.queueLabels.pop(i)
+                    self.queue.pop(i)
+                    return
+                keyLabel = label
+                while keyLabel['background'] == "#dcc8c8":
+                    self.queueLabels[i].destroy()
+                    self.queueLabels.pop(i)
+                    self.queue.pop(i)
+                    try:
+                        keyLabel = self.queueLabels[i]
+                    except:
+                        self.updateQueue()
+                        return
+                self.updateQueue()
+                return
+            else:
+                continue
+
     def queueLeave(self,e):
-        e.widget['background'] = "#f4f4f4"
+        for i,label in enumerate(self.queueLabels):
+            if label["background"] == "#dcc8c8":
+                redLabel = self.queueLabels[i]
+                while redLabel["background"] == "#dcc8c8":
+                    self.queueLabels[i]['background'] = "#f4f4f4"
+                    try:
+                        i = i + 1
+                        redLabel = self.queueLabels[i]
+                    except:
+                        return
+                return
 
     #call site scraping function when search button is clicked
     def runScraping(self):
@@ -163,11 +197,12 @@ class scraperGui(object):
 
 
     def updateQueue(self):
-        if len(self.queueLabels) > 50:
-            self.queueLabel["text"] = "SEARCH QUEUE (" + str(len(self.queueLabels)) + ") :"
-            self.configScroll()
-            return
-        elif len(self.queueLabels) < 50:
+        # if len(self.queueLabels) > 50:
+        #     self.queueLabel["text"] = "SEARCH QUEUE (" + str(len(self.queueLabels)) + ") :"
+        #     self.configScroll()
+        #     return
+        # el
+        if len(self.queueLabels) < 50:
             seenNum = len(self.queueLabels)
         else:
             seenNum = 50

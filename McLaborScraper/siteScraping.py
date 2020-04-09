@@ -9,26 +9,55 @@ import xlsxwriter
 import pickle
 import time
 
+
+def searchDelay(gui):
+    delay = 15 #30*60
+    if len(gui.queue) > 0:
+        for secs in range(delay):
+            if gui.startStopQueueButton["text"] == "Pause Queue" and len(gui.queue) > 0:
+                gui.statusLabel["text"] = Scraper.getMinutesSeconds(delay - secs) + " until next search"
+                time.sleep(1)
+            else:
+                return False
+        return True
+    return False
+
 def runScrapingLoop(gui):
-    delay = 15*60
-    if len(gui.queueLabels) > 0:
-        if gui.startStopQueueButton["text"] == "Pause Queue":
+    #check that there are queues to search
+    shouldRunLoop = True
+    while shouldRunLoop:
+        #check that the queue has length and is running
+        if len(gui.queueLabels) > 0 and gui.startStopQueueButton["text"] == "Pause Queue":
+            #collect search object and delete it from queue
             searchObject = gui.queue[0]
             gui.queue.pop(0)
             gui.queueLabels[0].destroy()
             gui.queueLabels.pop(0)
             gui.updateQueue()
+            #run search
             scrape(gui,searchObject)
-            if len(gui.queue) > 0:
-                for secs in range(delay):
-                    if gui.startStopQueueButton["text"] == "Pause Queue" and len(gui.queue) > 0:
-                        gui.statusLabel["text"] = Scraper.getMinutesSeconds(delay - secs) + " until next search"
-                        time.sleep(1)
-                    else:
-                        gui.statusLabel["text"] = "Queue Completed"
-                        gui.searchIsRunning[0] = False
-                        return
-                runScrapingLoop(gui)
+            if searchDelay(gui):
+                continue
+            else:
+                shouldRunLoop = False
+                continue
+        else:
+            shouldRunLoop = False
+            continue
+    if len(gui.queue) > 0 and gui.queue[0].worksheetSettings != None:
+        Excel.reportBadSites(gui.queue[0].worksheetSettings,gui.queue[0].worksheetSettings["worksheet"])
+        gui.queue[0].worksheetSettings["workbook"].close()
+        text = gui.queue[0].entry
+        testText = gui.queue[0].entry
+        while testText == text:
+            gui.queue.pop(0)
+            gui.queueLabels[0].destroy()
+            gui.queueLabels.pop(0)
+            gui.updateQueue()
+            try:
+                testText = gui.queue[0].entry
+            except:
+                break
     gui.startStopQueueButton["text"] = "Begin Queue"
     gui.statusLabel["text"] = "Queue Completed"
     gui.searchIsRunning[0] = False
@@ -36,12 +65,12 @@ def runScrapingLoop(gui):
 
 
 def scrape(gui,searchObj):
-    # print("Entry: ",searchObj.entry)
-    # print("Start: ",searchObj.start)
-    # print("Stop: ",searchObj.stop)
-    # print("Individual?: ",searchObj.isIndividual)
-    # print("Number of this Search (-1): ",searchObj.numOfSearch)
-    # print("Worksheet Settings: ",searchObj.worksheetSettings)
+    print("Entry: ",searchObj.entry)
+    print("Start: ",searchObj.start)
+    print("Stop: ",searchObj.stop)
+    print("Individual?: ",searchObj.isIndividual)
+    print("Number of this Search: ",searchObj.numOfSearch)
+    print("Worksheet Settings: ",searchObj.worksheetSettings)
     # Collect settings and entered query
     query = searchObj.entry
     gui.searchIsRunning[0] = True
@@ -86,7 +115,6 @@ def scrape(gui,searchObj):
     #eliminate any site repeats
     goodSites = Scraper.makeUnique(goodSites)
 
-    badSites = []
     for site in goodSites:
         #update gui
         siteProgress = str(sheet["statusIndex"]) + "/" + str(len(goodSites))
@@ -100,10 +128,10 @@ def scrape(gui,searchObj):
         try:
             homepageSoup = BeautifulSoup(requests.get(site,timeout=3.0).content,"lxml")
         except:
-            badSites.append(site)
+            sheet["badSites"].append(site)
             continue
         if not Scraper.isAllowedToScrape(site,homepageSoup):
-            badSites.append(site)
+            sheet["badSites"].append(site)
             continue
 
         #if site can be scraped write site to appropriate
@@ -181,22 +209,13 @@ def scrape(gui,searchObj):
             if compName is not None:
                 worksheet.write(sheet["index"], sheet["compNameCol"], compName)
             sheet["index"] = sheet["index"] + 1
-    sheet["index"] = sheet["index"] + 1
-    worksheet.write(sheet["index"],sheet["siteCol"],"Inaccessible Sites:")
-    sheet["index"] = sheet["index"] + 1
-    for badSite in badSites:
-        compName = Scraper.scrapeCompName(badSite)
-        if compName is not None:
-            worksheet.write(sheet["index"], sheet["badCompNameCol"], compName)
-        worksheet.write(sheet["index"],sheet["siteCol"],badSite)
-        sheet["index"] = sheet["index"] + 1
-
-    sheet["index"] = sheet["index"] + 2
 
     if searchObj.isIndividual or len(gui.queue) == 0:
-        gui.searchIsRunning[0] = False
+        Excel.reportBadSites(sheet,worksheet)
         workbook.close()
+        gui.searchIsRunning[0] = False
     elif not searchObj.isIndividual and gui.queue[0].numOfSearch == 0:
+        Excel.reportBadSites(sheet,worksheet)
         workbook.close()
     elif not searchObj.isIndividual and searchObj.numOfSearch == 0:
         for nextSearch in gui.queue:

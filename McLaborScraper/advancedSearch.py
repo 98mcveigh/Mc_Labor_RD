@@ -23,7 +23,7 @@ class advancedSearchGui(object):
         self.counties = counties()
         self.townsOrCounties = "Towns"
         self.settingsDict = {'saveDirectory':None,'numGoogResults':None}
-        self.searchResolution = 100
+        self.searchResolution = 15
 
 
         #Entry frame to hold label to enter search and toggle county
@@ -196,7 +196,7 @@ class advancedSearchGui(object):
         resultsPerSearch = self.slider.get()
         timePerResult = 1
         delayPerSearch = 15*60
-        estimate = (self.slider.get()/self.resolution)*numSearches*(delayPerSearch + (timePerResult*resultsPerSearch))
+        estimate = (self.slider.get()/self.searchResolution)*numSearches*(delayPerSearch + (timePerResult*resultsPerSearch))
         self.timeEstimate["text"] = self.getTime(estimate)
 
     def addSearchToQueue(self):
@@ -209,11 +209,11 @@ class advancedSearchGui(object):
             return
         string = self.mainEntry.get()
 
-        if self.townsOrCounties == "Counties":
-            list = self.counties
-        else:
-            list = self.towns
-
+        # if self.townsOrCounties == "Counties":
+        #     list = self.counties
+        # else:
+        #     list = self.towns
+        list = ["needham","newton","dedham"]
         numIterations = int(self.settingsDict['numGoogResults']/self.searchResolution)
 
         for location in list:

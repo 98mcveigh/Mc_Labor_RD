@@ -1,8 +1,8 @@
 import xlsxwriter
-
+import McLaborScraper.Scraper as Scraper
 
 def formatNewWorkbook(workbook,worksheet,query,settingsDict):
-    sheet = {"workbook":workbook,"worksheet":worksheet,"index":3,"statusIndex":1,"compNameCol":0,"locCol":1,"townCol":2,"stateCol":3,"zipCol":4,"phoneCol":5,"infoCol":6,"siteCol":7,"emailCol":8,"titleRow":2,"badCompNameCol":5}
+    sheet = {"workbook":workbook,"worksheet":worksheet,"badSites":[],"index":3,"statusIndex":1,"compNameCol":0,"locCol":1,"townCol":2,"stateCol":3,"zipCol":4,"phoneCol":5,"infoCol":6,"siteCol":7,"emailCol":8,"titleRow":2,"badCompNameCol":5}
 
     worksheet.write(0,0, "Google Search: ")
     worksheet.write(0,1, query)
@@ -29,7 +29,8 @@ def formatNewWorkbook(workbook,worksheet,query,settingsDict):
 def reportEmails(emails,sheet,worksheet):
     #print out emails to worksheet. any email start matching the list gets printed
     # out to info column and rest get printed out horizontally each in new cell
-    infoNames = ["info","office","marketing","sales","service","estimating","help","relations","supplierinfo","supplier","store","accounting","accounts"]
+    infoNames = ["info","office","customerservice","customersupport","marketing","sales","service","services","support","careers",
+    "estimating","help","relations","supplierinfo","supplier","store","accounting","accounts","media"]
     nonInfoNum = 0
     haveInfo = False
     for i,email in enumerate(emails):
@@ -51,3 +52,14 @@ def reportEmails(emails,sheet,worksheet):
             worksheet.write(sheet["index"],col,email)
             nonInfoNum = nonInfoNum + 1
     return
+
+def reportBadSites(sheet,worksheet):
+    sheet["index"] = sheet["index"] + 1
+    worksheet.write(sheet["index"],sheet["siteCol"],"Inaccessible Sites:")
+    sheet["index"] = sheet["index"] + 1
+    for badSite in sheet["badSites"]:
+        compName = Scraper.scrapeCompName(badSite)
+        if compName is not None:
+            worksheet.write(sheet["index"], sheet["badCompNameCol"], compName)
+        worksheet.write(sheet["index"],sheet["siteCol"],badSite)
+        sheet["index"] = sheet["index"] + 1
