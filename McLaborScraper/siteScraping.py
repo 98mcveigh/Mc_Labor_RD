@@ -11,7 +11,7 @@ import time
 
 
 def searchDelay(gui):
-    delay = 15 #30*60
+    delay = 30*60
     if len(gui.queue) > 0:
         for secs in range(delay):
             if gui.startStopQueueButton["text"] == "Pause Queue" and len(gui.queue) > 0:
@@ -65,12 +65,6 @@ def runScrapingLoop(gui):
 
 
 def scrape(gui,searchObj):
-    print("Entry: ",searchObj.entry)
-    print("Start: ",searchObj.start)
-    print("Stop: ",searchObj.stop)
-    print("Individual?: ",searchObj.isIndividual)
-    print("Number of this Search: ",searchObj.numOfSearch)
-    print("Worksheet Settings: ",searchObj.worksheetSettings)
     # Collect settings and entered query
     query = searchObj.entry
     gui.searchIsRunning[0] = True
@@ -117,6 +111,7 @@ def scrape(gui,searchObj):
 
     for site in goodSites:
         #update gui
+        time.sleep(1)
         siteProgress = str(sheet["statusIndex"]) + "/" + str(len(goodSites))
         gui.statusLabel["text"] = "Collecting information..." + " " + siteProgress
         gui.window.update_idletasks()
@@ -130,6 +125,7 @@ def scrape(gui,searchObj):
         except:
             sheet["badSites"].append(site)
             continue
+        time.sleep(1)
         if not Scraper.isAllowedToScrape(site,homepageSoup):
             sheet["badSites"].append(site)
             continue
@@ -160,6 +156,7 @@ def scrape(gui,searchObj):
                 continue
 
             #collect and report company name
+            time.sleep(1)
             compName = Scraper.scrapeCompName(site,homepageSoup,contSoup)
             if compName is not None:
                 worksheet.write(sheet["index"], sheet["compNameCol"], compName)

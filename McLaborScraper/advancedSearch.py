@@ -23,7 +23,7 @@ class advancedSearchGui(object):
         self.counties = counties()
         self.townsOrCounties = "Towns"
         self.settingsDict = {'saveDirectory':None,'numGoogResults':None}
-        self.searchResolution = 15
+        self.searchResolution = 150
 
 
         #Entry frame to hold label to enter search and toggle county
@@ -58,6 +58,7 @@ class advancedSearchGui(object):
         self.fileFrame = Frame(self.window,bg="#f4f4f4")
         self.fileFrame.place(relx=0.5,rely=0.35,anchor=CENTER)
 
+
         self.blankLabel1 = Label(self.fileFrame,text="",bg="#f4f4f4",font=("Franklin Gothic Medium",10))
         self.blankLabel1.grid(row=0,columnspan=2,sticky="ew")
 
@@ -77,10 +78,22 @@ class advancedSearchGui(object):
         self.numSearchLabel = Label(self.fileFrame,bg="#f4f4f4",borderwidth=0,text="# Google results to Search",font=("Franklin Gothic Medium",10))
         self.numSearchLabel.grid(row=3,column=0,sticky="s",ipadx=5)
 
-        self.slider = Scale(self.fileFrame,bg="#f4f4f4",from_=0,to=(12*self.searchResolution),orient=HORIZONTAL,resolution=self.searchResolution)
+        self.timeFrame = Frame(self.window)
+        self.timeFrame.place(relx=0.5,rely=0.85,anchor=CENTER)
+
+        self.timeTitle = Label(self.timeFrame,bg="#f4f4f4",width=30,borderwidth=0,text="Estimated Time To Complete",font=("Franklin Gothic Medium",12))
+        self.timeTitle.pack(fill="x")
+
+        self.timeEstimate = Label(self.timeFrame,bg="#f4f4f4",width=30,borderwidth=0,text="14 hours 6 minutes",font=("Franklin Gothic Medium",9))
+        self.timeEstimate.pack(fill="x")
+
+        self.slider = Scale(self.fileFrame,bg="#f4f4f4",from_=0,to=(4*self.searchResolution),orient=HORIZONTAL,resolution=self.searchResolution)
         self.slider.configure(sliderrelief="flat",bd=0,troughcolor="#cccccc",highlightthickness=0,command=self.updateEstimate)
         self.slider.set(2*self.searchResolution)
         self.slider.grid(row=3,column=1,sticky="ew")
+
+        self.infoLabel = Label(self.fileFrame,bg="#f4f4f4",text="Searches will be run in batches of " + str(self.searchResolution) + " every 30 minutes.",font=("Franklin Gothic Medium",8))
+        self.infoLabel.grid(row=4,columnspan=2,sticky="s")
 
         self.exampleFrame = Frame(self.window)
         self.exampleFrame.place(relx=0.5,rely=0.65,anchor=CENTER)
@@ -93,15 +106,6 @@ class advancedSearchGui(object):
             labelText = "... " + self.towns[i] + " Ma"
             self.examples.append(Label(self.exampleFrame,bg="#f4f4f4",borderwidth=0,text=labelText,font=("Franklin Gothic Medium",9)))
             self.examples[i].pack(fill="x")
-
-        self.timeFrame = Frame(self.window)
-        self.timeFrame.place(relx=0.5,rely=0.85,anchor=CENTER)
-
-        self.timeTitle = Label(self.timeFrame,bg="#f4f4f4",width=30,borderwidth=0,text="Estimated Time To Complete",font=("Franklin Gothic Medium",12))
-        self.timeTitle.pack(fill="x")
-
-        self.timeEstimate = Label(self.timeFrame,bg="#f4f4f4",width=30,borderwidth=0,text="14 hours 6 minutes",font=("Franklin Gothic Medium",9))
-        self.timeEstimate.pack(fill="x")
 
         self.finalFrame = Frame(self.window)
         self.finalFrame.place(relx=0.5,rely=1,anchor="s")
@@ -194,7 +198,7 @@ class advancedSearchGui(object):
         else:
             numSearches = len(self.counties)
         resultsPerSearch = self.slider.get()
-        timePerResult = 1
+        timePerResult = 3
         delayPerSearch = 15*60
         estimate = (self.slider.get()/self.searchResolution)*numSearches*(delayPerSearch + (timePerResult*resultsPerSearch))
         self.timeEstimate["text"] = self.getTime(estimate)
@@ -209,11 +213,11 @@ class advancedSearchGui(object):
             return
         string = self.mainEntry.get()
 
-        # if self.townsOrCounties == "Counties":
-        #     list = self.counties
-        # else:
-        #     list = self.towns
-        list = ["needham","newton","dedham"]
+        if self.townsOrCounties == "Counties":
+            list = self.counties
+        else:
+            list = self.towns
+
         numIterations = int(self.settingsDict['numGoogResults']/self.searchResolution)
 
         for location in list:

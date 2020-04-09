@@ -47,8 +47,13 @@ class changeSettings(object):
         self.sliderLabel = Label(self.numSearchFrame,text="Number of Google results to search:")
         self.sliderLabel.place(rely=0.5,relx=0.25,anchor=CENTER)
 
+        if self.settingsDict["numGoogResults"]:
+            setpos = self.settingsDict["numGoogResults"]
+        else:
+            setpos = 150
+
         self.slider = Scale(self.numSearchFrame,from_=0,to=300,orient=HORIZONTAL,resolution=self.searchResolution)
-        self.slider.set(150)
+        self.slider.set(setpos)
         self.slider.place(rely=0.5,relx=0.75,anchor=CENTER)
 
         self.finishButton = Button(self.finishFrame,text="Finish",width=12,command=self.saveSettings)

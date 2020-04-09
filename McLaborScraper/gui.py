@@ -197,11 +197,6 @@ class scraperGui(object):
 
 
     def updateQueue(self):
-        # if len(self.queueLabels) > 50:
-        #     self.queueLabel["text"] = "SEARCH QUEUE (" + str(len(self.queueLabels)) + ") :"
-        #     self.configScroll()
-        #     return
-        # el
         if len(self.queueLabels) < 50:
             seenNum = len(self.queueLabels)
         else:
@@ -212,7 +207,10 @@ class scraperGui(object):
             self.queueLabels[i].bind("<Leave>", self.queueLeave)
             self.queueLabels[i].bind("<Button-1>", self.queueClick)
             self.configScroll()
-        self.queueLabel["text"] = "SEARCH QUEUE (" + str(len(self.queueLabels)) + ") :"
+        if len(self.queueLabels) == 0:
+            self.queueLabel["text"] = "SEARCH QUEUE:"
+        else:
+            self.queueLabel["text"] = "SEARCH QUEUE (" + str(len(self.queueLabels)) + "):"
 
 
 
