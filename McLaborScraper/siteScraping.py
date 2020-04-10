@@ -8,7 +8,7 @@ import re
 import xlsxwriter
 import pickle
 import time
-
+from datetime import date
 
 def searchDelay(gui):
     delay = 30*60
@@ -100,12 +100,19 @@ def scrape(gui,searchObj):
     gui.statusLabel["text"] = "Collecting sites..."
     gui.window.update_idletasks()
 
-    #search google for sites and collect only those that are homepages and
+    # search google for sites and collect only those that are homepages and
     # about pages (avoiding things like angies list)
+    sites = []
     for site in search(query, tld='com', lang='en', num=30, start=searchObj.start, stop=searchObj.stop, pause=4.0):
+        sites.append(site)
         cleanValidSite = Scraper.validateSite(site)
         if cleanValidSite is not None:
             goodSites.append(cleanValidSite)
+    print("Search #" + str(searchObj.numOfSearch + 1) + " for: \"" + searchObj.entry + "\" should produce " + str(searchObj.stop) + " results from Google." )
+    if not sites:
+        print("Search #" + str(searchObj.numOfSearch + 1) + " for: \"" + searchObj.entry + "\" produced 0 results from Google.")
+    else:
+        print("Search #" + str(searchObj.numOfSearch + 1) + " for: \"" + searchObj.entry + "\" produced" + str(len(sites)) + "results from Google.")
     #eliminate any site repeats
     goodSites = Scraper.makeUnique(goodSites)
 
@@ -132,6 +139,7 @@ def scrape(gui,searchObj):
 
         #if site can be scraped write site to appropriate
         # excel cell and collect emails from homepage
+        worksheet.write(sheet["index"],sheet["dateCol"],date.today().strftime("%m/%d/%Y"))
         worksheet.write(sheet["index"],sheet["siteCol"], site)
         emails = Scraper.makeUnique(emails + Scraper.scrapeEmail(homepageSoup))
         #get contact page and if it is there collect the content.
