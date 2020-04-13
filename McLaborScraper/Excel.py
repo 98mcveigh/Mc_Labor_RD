@@ -1,5 +1,7 @@
 import xlsxwriter
 import McLaborScraper.Scraper as Scraper
+import time
+from datetime import date
 
 def formatNewWorkbook(workbook,worksheet,query,settingsDict):
     sheet = {"workbook":workbook,"worksheet":worksheet,"badSites":[],"index":3,"statusIndex":1,
@@ -66,12 +68,10 @@ def reportEmails(emails,sheet,worksheet):
     return
 
 def reportBadSites(sheet,worksheet):
-    sheet["index"] = sheet["index"] + 1
-    worksheet.write(sheet["index"],sheet["siteCol"],"Inaccessible Sites:")
-    sheet["index"] = sheet["index"] + 1
     for badSite in sheet["badSites"]:
         compName = Scraper.scrapeCompName(badSite)
         if compName is not None:
             worksheet.write(sheet["index"], sheet["badCompNameCol"], compName)
         worksheet.write(sheet["index"],sheet["siteCol"],badSite)
+        worksheet.write(sheet["index"],sheet["dateCol"],date.today().strftime("%m/%d/%Y"))
         sheet["index"] = sheet["index"] + 1

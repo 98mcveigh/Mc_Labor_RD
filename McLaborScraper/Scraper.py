@@ -259,7 +259,10 @@ def scrapeCompNameByClearbit(site):
     endPoint = re.search('\.\w{3}',newString).span()[1]
     coreSite = newString[:endPoint]
     ClearbitSite = "https://autocomplete.clearbit.com/v1/companies/suggest?query=" + coreSite
-    soup = BeautifulSoup(requests.get(ClearbitSite).content,"lxml")
+    try:
+        soup = BeautifulSoup(requests.get(ClearbitSite,timeout = 3.0).content,"lxml")
+    except:
+        return None
     results = soup.find('p').text
     if results != "[]":
         compNameStart = re.search('\"name\":\"',results).span()[1]
