@@ -112,7 +112,7 @@ def scrape(gui,searchObj):
     if not sites:
         print("Search #" + str(searchObj.numOfSearch + 1) + " for: \"" + searchObj.entry + "\" produced 0 results from Google.")
     else:
-        print("Search #" + str(searchObj.numOfSearch + 1) + " for: \"" + searchObj.entry + "\" produced" + str(len(sites)) + "results from Google.")
+        print("Search #" + str(searchObj.numOfSearch + 1) + " for: \"" + searchObj.entry + "\" produced " + str(len(sites)) + " results from Google.")
     #eliminate any site repeats
     goodSites = Scraper.makeUnique(goodSites)
 

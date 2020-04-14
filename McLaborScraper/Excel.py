@@ -59,7 +59,6 @@ def reportEmails(emails,sheet,worksheet):
         else:
             if haveB2B:
                 extraEmails.append(email)
-                print(extraEmails)
                 continue
             else:
                 worksheet.write(sheet["index"],sheet["emailCol"],email)
