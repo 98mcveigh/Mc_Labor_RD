@@ -6,7 +6,7 @@ from datetime import date
 def formatNewWorkbook(workbook,worksheet,query,settingsDict):
     sheet = {"workbook":workbook,"worksheet":worksheet,"badSites":[],"index":3,"statusIndex":1,
     "dateCol":0,"compNameCol":1,"locCol":2,"townCol":3,"stateCol":4,"zipCol":5,"phoneCol":6,"infoCol":7,
-    "siteCol":8,"emailCol":9,"notesCol":10,"titleRow":2,"badCompNameCol":1}
+    "emailCol":8,"siteCol":9,"notesCol":10,"titleRow":2,"badCompNameCol":1}
 
     worksheet.write(0,0, "Google Search: ")
     worksheet.write(0,1, query)
@@ -20,8 +20,8 @@ def formatNewWorkbook(workbook,worksheet,query,settingsDict):
     worksheet.write(sheet["titleRow"],sheet["zipCol"], "Mailing Zip Code")
     worksheet.write(sheet["titleRow"],sheet["phoneCol"], "Phone Number Combined")
     worksheet.write(sheet["titleRow"],sheet["infoCol"], "Email #1 (Info)")
-    worksheet.write(sheet["titleRow"],sheet["siteCol"], "Website Address")
     worksheet.write(sheet["titleRow"],sheet["emailCol"], "Email #2 (B2B)")
+    worksheet.write(sheet["titleRow"],sheet["siteCol"], "Website Address")
     worksheet.write(sheet["titleRow"],sheet["notesCol"], "Notes")
     worksheet.set_column(0,3,20)
     worksheet.set_column(4,5,15)

@@ -181,9 +181,10 @@ def scrape(gui,searchObj):
             #find best address prioritizing full address -> PO Box -> just town
             bestAddress = Scraper.scrapeBestAddress(contSoup,True)
             if bestAddress is not None:
-                worksheet.write(sheet["index"],sheet["locCol"],bestAddress)
-                town = Scraper.getTownFromLoc(bestAddress)
-                worksheet.write(sheet["index"],sheet["townCol"],town)
+                info = Scraper.getMailAndTownFromLoc(bestAddress)
+                if info[0]:
+                    worksheet.write(sheet["index"],sheet["locCol"],info[0])
+                worksheet.write(sheet["index"],sheet["townCol"],info[1])
                 zip = Scraper.getZipFromLoc(bestAddress)
                 worksheet.write(sheet["index"],sheet["zipCol"],zip)
                 worksheet.write(sheet["index"],sheet["stateCol"],"MA") #scraper only functional for MA 4-3-2020
@@ -199,9 +200,10 @@ def scrape(gui,searchObj):
             # of site listing available towns for work
             bestAddress = Scraper.scrapeBestAddress(homepageSoup)
             if bestAddress is not None:
-                worksheet.write(sheet["index"],sheet["locCol"],bestAddress)
-                town = Scraper.getTownFromLoc(bestAddress)
-                worksheet.write(sheet["index"],sheet["townCol"],town)
+                info = Scraper.getMailAndTownFromLoc(bestAddress)
+                if info[0]:
+                    worksheet.write(sheet["index"],sheet["locCol"],info[0])
+                worksheet.write(sheet["index"],sheet["townCol"],info[1])
                 zip = Scraper.getZipFromLoc(bestAddress)
                 worksheet.write(sheet["index"],sheet["zipCol"],zip)
                 worksheet.write(sheet["index"],sheet["stateCol"],"MA") #scraper only functional for MA 4-3-2020

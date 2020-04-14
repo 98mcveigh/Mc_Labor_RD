@@ -3,6 +3,7 @@ from tkinter import *
 from tkinter import messagebox
 import McLaborScraper.siteScraping as siteScraping
 import threading
+import McLaborScraper.history as history
 import McLaborScraper.settings as settings
 import McLaborScraper.advancedSearch as advancedSearch
 import McLaborScraper.Search as Search
@@ -20,6 +21,7 @@ class scraperGui(object):
         self.window.configure(bg="#f4f4f4")
         self.window.minsize(300,500)
         self.window.iconbitmap("McLaborScraper/inc/McLaborIcon.ico")
+        self.window.protocol("WM_DELETE_WINDOW", self.onClosing)
         self.searchIsRunning = [False]
         self.queue = []
         self.queueLabels = []
@@ -71,6 +73,13 @@ class scraperGui(object):
         self.advancedSearchButton.bind("<Leave>", self.onLeave)
         self.advancedSearchButton.pack(side="right")
 
+        self.historyButton = Button(self.advancedFrame,text="History",font=("Times New Roman",8),command=self.history)
+        self.historyButton.configure(bg="#f4f4f4",activebackground = "#bbbbbb",relief = "flat",width=15)
+        self.historyButton.bind("<Enter>", self.onEnter)
+        self.historyButton.bind("<Leave>", self.onLeave)
+        self.historyButton.pack(side="right")
+
+
         self.queueButton = Button(self.midFrame,text="Add Search To Queue",bg="#f4f4f4",command=self.addToQueue,width=15)
         self.queueButton.configure(activebackground = "#bbbbbb",relief="flat",font=("Franklin Gothic Medium",10))
         self.queueButton.bind("<Enter>", self.onEnter)
@@ -112,6 +121,15 @@ class scraperGui(object):
     def onLeave(self,e):
         e.widget['background'] = "#f4f4f4"
 
+    def onClosing(self):
+        if self.searchIsRunning[0]:
+            messagebox.showerror("Not Allowed","Can\'t close while search is running.")
+        elif len(self.queue) > 0:
+            if messagebox.askyesno("Are you sure you want to quit?","There are items in your queue. If you quit, these items will be deleted."):
+                self.window.destroy()
+        else:
+            self.window.destroy()
+
     def queueEnter(self,e):
         for i,item in enumerate(self.queue):
             if e.widget["text"] == item.entry:
@@ -124,6 +142,8 @@ class scraperGui(object):
                     except:
                         return
                 return
+    def history(self):
+        history.History()
 
     def queueClick(self,e):
         for i,label in enumerate(self.queueLabels):
@@ -226,7 +246,8 @@ class scraperGui(object):
                 scraperThread = threading.Thread(target=siteScraping.runScrapingLoop,args=[self])
                 scraperThread.start()
         else:
-            self.startStopQueueButton["text"] = "Begin Queue"
+            if self.checkToPauseQueue():
+                self.startStopQueueButton["text"] = "Begin Queue"
 
     def configScroll(self):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"),height=100,width=50)
@@ -234,6 +255,11 @@ class scraperGui(object):
     def advancedSearch(self):
         guiThread = threading.Thread(target=advancedSearch.advancedSearchGui,args=[self])
         guiThread.start()
+
+    def checkToPauseQueue(self):
+        result = messagebox.askyesno("Are you sure?","Are you sure you would like to pause the Queue?")
+        return result
+
 
 def beginScraper():
     scraperGui()

@@ -37,7 +37,7 @@ def makeUnique(lis):
                 wrapCount[wrapperCandidate] = wrapCount[wrapperCandidate] + 1
     final = []
     for candidate in wrapCount:
-        if wrapCount[candidate] is 0:
+        if wrapCount[candidate] == 0:
             final.append(candidate)
 
     return list(dict.fromkeys(final))
@@ -298,17 +298,21 @@ def scrapeCompName(site,homepageSoup=None,contSoup=None):
         return getStringNoSpaces(compName)
     return None
 
-def getTownFromLoc(location):
+def getMailAndTownFromLoc(location):
     # Loops through all towns in mass and finds match in the location.
     # find longest so as to match "East Bridgewater" and not just "Bridgewater"
     record = ""
     for town in towns():
-        if town.lower() in location.lower() and len(town) > len(record):
-            record = town
+        potMatch = re.search(town,location,re.I)
+        if potMatch and (potMatch.span()[1] - potMatch.span()[0]) > len(record):
+            record = location[potMatch.span()[0]:potMatch.span()[1]]
+            mailingAddress = getStringNoSpaces(location[:potMatch.span()[0]])
         else:
             continue
+    if mailingAddress == "":
+        mailingAddress = None
     if record != "":
-        return record
+        return [mailingAddress,record]
     else:
         return None
 
@@ -318,6 +322,7 @@ def getZipFromLoc(location):
         if zip in location:
             return zip
     return None
+
 
 def scrapeBestAddress(soup,shouldScrapeTown = False):
     bestAddress = scrapeAddress(soup)
