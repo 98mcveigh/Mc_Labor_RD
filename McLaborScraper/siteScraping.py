@@ -108,11 +108,8 @@ def scrape(gui,searchObj):
         cleanValidSite = Scraper.validateSite(site)
         if cleanValidSite is not None:
             goodSites.append(cleanValidSite)
-    print("Search #" + str(searchObj.numOfSearch + 1) + " for: \"" + searchObj.entry + "\" should produce " + str(searchObj.stop) + " results from Google." )
-    if not sites:
-        print("Search #" + str(searchObj.numOfSearch + 1) + " for: \"" + searchObj.entry + "\" produced 0 results from Google.")
-    else:
-        print("Search #" + str(searchObj.numOfSearch + 1) + " for: \"" + searchObj.entry + "\" produced " + str(len(sites)) + " results from Google.")
+
+    print("Search for: \"" + searchObj.entry + "\" produced " + str(len(sites)) + " results from Google." )
     #eliminate any site repeats
     goodSites = Scraper.makeUnique(goodSites)
 

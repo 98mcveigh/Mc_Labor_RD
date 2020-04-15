@@ -22,6 +22,7 @@ class scraperGui(object):
         self.window.minsize(300,500)
         self.window.iconbitmap("McLaborScraper/inc/McLaborIcon.ico")
         self.window.protocol("WM_DELETE_WINDOW", self.onClosing)
+        self.history = history.History()
         self.searchIsRunning = [False]
         self.queue = []
         self.queueLabels = []
@@ -73,7 +74,7 @@ class scraperGui(object):
         self.advancedSearchButton.bind("<Leave>", self.onLeave)
         self.advancedSearchButton.pack(side="right")
 
-        self.historyButton = Button(self.advancedFrame,text="History",font=("Times New Roman",8),command=self.history)
+        self.historyButton = Button(self.advancedFrame,text="History",font=("Times New Roman",8),command=self.openHistoryWindow)
         self.historyButton.configure(bg="#f4f4f4",activebackground = "#bbbbbb",relief = "flat",width=15)
         self.historyButton.bind("<Enter>", self.onEnter)
         self.historyButton.bind("<Leave>", self.onLeave)
@@ -88,7 +89,6 @@ class scraperGui(object):
 
         self.queueFrame = Frame(self.midFrame,bg="#f4f4f4")
         self.queueFrame.grid(row=3,columnspan=2,sticky="ew")
-
         self.canvas = Canvas(self.queueFrame,bg="#f4f4f4")
         self.scrollFrame=Frame(self.canvas,bg="#f4f4f4",borderwidth=0)
         self.myscrollbar=Scrollbar(self.queueFrame,orient="vertical",command=self.canvas.yview)
@@ -142,8 +142,9 @@ class scraperGui(object):
                     except:
                         return
                 return
-    def history(self):
-        history.History()
+
+    def openHistoryWindow(self):
+        self.history.runWindow()
 
     def queueClick(self,e):
         for i,label in enumerate(self.queueLabels):
@@ -190,7 +191,7 @@ class scraperGui(object):
             if self.searchIsRunning[0]:
                 messagebox.showerror("Not Allowed","Multiple searches can not be run at the same time.")
             else:
-                searchObj = Search.Search(self.searchEntry.get(),0,self.settingsDict["numGoogResults"],True)
+                searchObj = Search.Search(self.searchEntry.get(),0,True)
                 scraperThread = threading.Thread(target=siteScraping.scrape,args=[self,searchObj])
                 scraperThread.start()
                 self.searchEntry.delete(0,'end')
@@ -208,11 +209,11 @@ class scraperGui(object):
                 return
             else:
                 self.queueLabels.append(Label(self.scrollFrame,anchor=CENTER,text=self.searchEntry.get(),bg="#f4f4f4",font=("Franklin Gothic Medium",8)))
-                self.queue.append(Search.Search(self.searchEntry.get(),0,self.settingsDict['numGoogResults'],False,0))
+                self.queue.append(Search.Search(self.searchEntry.get(),0,False))
                 self.searchEntry.delete(0,'end')
         else:
             self.queueLabels.append(Label(self.scrollFrame,anchor=CENTER,text=entry,bg="#f4f4f4",font=("Franklin Gothic Medium",8)))
-            self.queue.append(Search.Search(entry,((iter)*resolution + 1),resolution,False,iter))
+            self.queue.append(Search.Search(entry,((iter)*resolution + 1),False,iter))
         self.updateQueue()
 
 

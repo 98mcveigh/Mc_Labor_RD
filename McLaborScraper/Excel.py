@@ -23,11 +23,11 @@ def formatNewWorkbook(workbook,worksheet,query,settingsDict):
     worksheet.write(sheet["titleRow"],sheet["emailCol"], "Email #2 (B2B)")
     worksheet.write(sheet["titleRow"],sheet["siteCol"], "Website Address")
     worksheet.write(sheet["titleRow"],sheet["notesCol"], "Notes")
-    worksheet.set_column(0,3,20)
+    worksheet.set_column(0,0,15)
+    worksheet.set_column(1,3,20)
     worksheet.set_column(4,5,15)
-    worksheet.set_column(6,7,20)
-    worksheet.set_column(8,8,30)
-    worksheet.set_column(9,10,25)
+    worksheet.set_column(6,8,20)
+    worksheet.set_column(9,10,30)
 
     return sheet
 
