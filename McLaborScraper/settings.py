@@ -52,7 +52,7 @@ class changeSettings(object):
         else:
             setpos = 150
 
-        self.slider = Scale(self.numSearchFrame,from_=0,to=300,orient=HORIZONTAL,resolution=self.searchResolution)
+        self.slider = Scale(self.numSearchFrame,from_=0,to=150,orient=HORIZONTAL,resolution=self.searchResolution)
         self.slider.set(setpos)
         self.slider.place(rely=0.5,relx=0.75,anchor=CENTER)
 

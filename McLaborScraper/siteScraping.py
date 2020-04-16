@@ -179,8 +179,7 @@ def scrape(gui,searchObj):
             bestAddress = Scraper.scrapeBestAddress(contSoup,True)
             if bestAddress is not None:
                 info = Scraper.getMailAndTownFromLoc(bestAddress)
-                if info[0]:
-                    worksheet.write(sheet["index"],sheet["locCol"],info[0])
+                worksheet.write(sheet["index"],sheet["locCol"],info[0])
                 worksheet.write(sheet["index"],sheet["townCol"],info[1])
                 zip = Scraper.getZipFromLoc(bestAddress)
                 worksheet.write(sheet["index"],sheet["zipCol"],zip)
@@ -198,8 +197,7 @@ def scrape(gui,searchObj):
             bestAddress = Scraper.scrapeBestAddress(homepageSoup)
             if bestAddress is not None:
                 info = Scraper.getMailAndTownFromLoc(bestAddress)
-                if info[0]:
-                    worksheet.write(sheet["index"],sheet["locCol"],info[0])
+                worksheet.write(sheet["index"],sheet["locCol"],info[0])
                 worksheet.write(sheet["index"],sheet["townCol"],info[1])
                 zip = Scraper.getZipFromLoc(bestAddress)
                 worksheet.write(sheet["index"],sheet["zipCol"],zip)

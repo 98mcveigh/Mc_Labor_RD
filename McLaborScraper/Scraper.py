@@ -302,6 +302,7 @@ def getMailAndTownFromLoc(location):
     # Loops through all towns in mass and finds match in the location.
     # find longest so as to match "East Bridgewater" and not just "Bridgewater"
     record = ""
+    mailingAddress = ""
     for town in towns():
         potMatch = re.search(town,location,re.I)
         if potMatch and (potMatch.span()[1] - potMatch.span()[0]) > len(record):
@@ -309,19 +310,14 @@ def getMailAndTownFromLoc(location):
             mailingAddress = getStringNoSpaces(location[:potMatch.span()[0]])
         else:
             continue
-    if mailingAddress == "":
-        mailingAddress = None
-    if record != "":
-        return [mailingAddress,record]
-    else:
-        return None
+    return [mailingAddress,record]
 
 def getZipFromLoc(location):
     # Loops through all zips in mass and finds match in the location.
     for zip in zips():
         if zip in location:
             return zip
-    return None
+    return ""
 
 
 def scrapeBestAddress(soup,shouldScrapeTown = False):
