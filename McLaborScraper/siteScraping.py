@@ -81,7 +81,7 @@ def scrape(gui,searchObj):
 
         worksheet = workbook.add_worksheet()
 
-        sheet = Excel.formatNewWorkbook(workbook,worksheet,query,settingsDict)
+        sheet = Excel.formatNewWorkbook(workbook,worksheet,query)
     elif not searchObj.isIndividual and searchObj.numOfSearch == 0:
         workbookName = '_'.join(query.split())
 
@@ -89,7 +89,7 @@ def scrape(gui,searchObj):
 
         worksheet = workbook.add_worksheet()
 
-        sheet = Excel.formatNewWorkbook(workbook,worksheet,query,settingsDict)
+        sheet = Excel.formatNewWorkbook(workbook,worksheet,query)
     else:
         sheet = searchObj.worksheetSettings
         workbook = sheet["workbook"]

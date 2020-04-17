@@ -21,7 +21,7 @@ class advancedSearchGui(object):
         self.window.resizable(False,False)
         self.window.iconbitmap("McLaborScraper/inc/McLaborIcon.ico")
         self.groupDict = groupDict()
-        self.settingsDict = {'saveDirectory':None,'numGoogResults':None}
+        self.settingsDict = {'saveDirectory':None}
         self.searchResolution = 150
 
 
@@ -214,7 +214,6 @@ class advancedSearchGui(object):
         else:
             listKey = self.groupSelect.get()
 
-        # numIterations = int(self.settingsDict['numGoogResults']/self.searchResolution)
         numIterations = 1
         for location in self.groupDict[listKey]:
             for iter in range(numIterations):
@@ -230,8 +229,6 @@ class advancedSearchGui(object):
             messagebox.showerror("Not Allowed","Must choose a file location.")
             self.window.focus_force()
             return False
-        # self.settingsDict['numGoogResults'] = self.slider.get()
-        self.settingsDict['numGoogResults'] = 150
         settingFile = open("settings.dat","wb")
         pickle.dump(self.settingsDict,settingFile)
         settingFile.close()

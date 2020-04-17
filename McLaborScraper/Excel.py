@@ -3,7 +3,7 @@ import McLaborScraper.Scraper as Scraper
 import time
 from datetime import date
 
-def formatNewWorkbook(workbook,worksheet,query,settingsDict):
+def formatNewWorkbook(workbook,worksheet,query):
     sheet = {"workbook":workbook,"worksheet":worksheet,"badSites":[],"index":3,"statusIndex":1,
     "dateCol":0,"compNameCol":1,"locCol":2,"townCol":3,"stateCol":4,"zipCol":5,"phoneCol":6,"infoCol":7,
     "emailCol":8,"siteCol":9,"notesCol":10,"titleRow":2,"badCompNameCol":1}
@@ -11,7 +11,7 @@ def formatNewWorkbook(workbook,worksheet,query,settingsDict):
     worksheet.write(0,0, "Google Search: ")
     worksheet.write(0,1, query)
     worksheet.write(1,0, "Number of Google Results Searched: ")
-    worksheet.write(1,2, str(settingsDict['numGoogResults']))
+    worksheet.write(1,2, "150")
     worksheet.write(sheet["titleRow"],sheet["dateCol"], "Date Collected")
     worksheet.write(sheet["titleRow"],sheet["compNameCol"], "Company Name")
     worksheet.write(sheet["titleRow"],sheet["locCol"], "Mailing Address")

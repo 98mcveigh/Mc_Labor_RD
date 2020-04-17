@@ -8,7 +8,7 @@ def counties():
     return ['Barnstable','Berkshire','Bristol','Dukes','Essex','Franklin','Hampden','Hampshire','Middlesex','Nantucket','Norfolk','Plymouth','Suffolk','Worcester']
 
 def groupList():
-    return ['Make a Selection...','Towns in Barnstable County','Towns in Berkshire County','Towns in Bristol County','Towns in Dukes County','Towns in Essex County','Towns in Franklin County','Towns in Hampden County','Towns in Hampshire','Towns in Middlesex County','Towns in Nantucket County','Towns in Norfolk County','Towns in Plymouth County','Towns in Suffolk County','Towns in Worcester County','All Towns in Mass','Each County in Mass']
+    return ['Make a Selection...','Towns in Barnstable County','Towns in Berkshire County','Towns in Bristol County','Towns in Dukes County','Towns in Essex County','Towns in Franklin County','Towns in Hampden County','Towns in Hampshire County','Towns in Middlesex County','Towns in Nantucket County','Towns in Norfolk County','Towns in Plymouth County','Towns in Suffolk County','Towns in Worcester County','All Towns in Mass','Each County in Mass']
 
 def groupDict():
     return {"Towns in Barnstable County":["Barnstable", "Bourne", "Brewster", "Chatham", "Dennis", "Eastham", "Falmouth", "Harwich", "Mashpee", "Orleans", "Provincetown", "Sandwich", "Truro", "Wellfleet", "Yarmouth"],
